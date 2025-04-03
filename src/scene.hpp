@@ -26,6 +26,11 @@ public:
     std::vector<Object*> objects;
     std::vector<Material> materials;
     std::vector<PointLight> lights;
+    color sky;
+    Scene()
+    {
+        sky = color(0.5, 0.7, 1.0); // default sky color
+    }
 };
 
 class Ray {
@@ -113,6 +118,7 @@ public:
 
 class Material {
 public:
+    color albedo;
     virtual color emission(const HitRecord &rec, glm::vec3 v) const {
         return glm::vec3(0.0);
     }
@@ -142,7 +148,6 @@ class Metallic: public Material
 {
     public:
     color albedo;
-    float fuzz;
     virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
     virtual bool reflection(const HitRecord &rec, glm::vec3 v,
                             glm::vec3 &r, color &kr) const
@@ -151,9 +156,8 @@ class Metallic: public Material
         kr = albedo;
         return true;
     }
-    Metallic(color albedo, float fuzz):
-        albedo(albedo),
-        fuzz(fuzz) {
+    Metallic(color albedo):
+        albedo(albedo) {
     }
 };
 
@@ -176,6 +180,6 @@ HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range = Interval(0,
 color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene);
 // color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat);
 color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene);
-
+color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth);
 
 #endif

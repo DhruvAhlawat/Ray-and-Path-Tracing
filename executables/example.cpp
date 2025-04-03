@@ -10,10 +10,13 @@ void part1(Scene &scene)
 
     Material *diffuse_red = new Lambertian(color(0.7, 0, 0));
     Material *diffuse_yellow = new Lambertian(color(0.8, 0.8, 0));
+    Material *diffuse_grey = new Lambertian(color(0.8, 0.8, 0.8));
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_red);
+    Material *metallic_red = new Metallic(color(0.7, 0, 0));
+
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_yellow);
     scene.objects.push_back(unitSphere);
-    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_yellow);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_grey);
     scene.objects.push_back(bigSphere);
 }
 
@@ -34,6 +37,7 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
         // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
         // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
         color radiance = getFixedRadiance(ray, rec, scene);
+        // color radiance = specularRadiance(ray, rec, scene, 2); // get the color from the ray.
         c = radiance;
         // Now, we can get the color from the material.
         // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));

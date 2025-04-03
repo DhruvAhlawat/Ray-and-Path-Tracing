@@ -69,19 +69,44 @@ color Lambertian::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
 color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
 {
     color c = albedo;
-
+    vec3 r = reflect(v, rec.n);
+    return c * glm::max(glm::dot(r, l), 0.0f); // specular reflection.
 
 }
 
-// color getFixedRadiance(HitRecord &rec, Scene &scene)
-// {
-//     return getFixedRadiance(rec.p, rec.n, scene, rec.mat);
-// }
+color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth)
+{
+    if(recursionDepth <= 0) return scene.sky; //no computations here.
+    color result(0.0f), refColor(0.0f);
+    float bias = 0.001; // bias to avoid self-shadowing
+    vec3 l;
+    bool reflection = rec.mat->reflection(rec, ogRay.d, l, refColor); // reflect the ray direction.
+    if(!reflection) 
+    {
+        return getFixedRadiance(ogRay, rec, scene); //if no reflection on this material, then just return radiance from the fixed light sources. FOR NOW. TO CHANGE LATER.
+    }
+    //otherwise we needa do some reflection, so cast a new ray.
+
+    Ray ray(rec.p + bias * rec.n, l); // first move a little in that direction.
+    HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
+    if(newRec.hit)
+    {
+        // color incident = rec.mat->brdf(rec, l, ogRay.d) * specularRadiance(ray, newRec, scene, recursionDepth - 1); // get the color from the ray.
+        result = refColor * specularRadiance(ray, newRec, scene, recursionDepth - 1); 
+    }
+    else
+    {
+        result = scene.sky; // if no hit, return the sky color.
+    }
+    return result;
+}
+
+
 
 color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
 {
     color result(0.0);
-    float bias = 0.01; // bias to avoid self-shadowing
+    float bias = 0.001; // bias to avoid self-shadowing
     for(auto &light : scene.lights)
     {
 
@@ -89,7 +114,7 @@ color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
         float distance = glm::length(l);
         l = normalize(l);
         // HitRecord rec;
-        Ray ray(rec.p, l); //first move a little in that direction.
+        Ray ray(rec.p + bias * rec.n, l); //first move a little in that direction.
 
         HitRecord newRec = getRayHit(ray, scene, Interval(bias, distance - bias));
         if(!newRec.hit) // check if the ray hits any object.
@@ -100,7 +125,7 @@ color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
             // cout << "light direction : " << l.x << " " << l.y << " " << l.z << endl;
             // cout << "ray hit, : color = " << radiance.x << " " << radiance.y << " " << radiance.z << endl;
             }
-            result += rec.mat->brdf(rec, l, -ogRay.d) * radiance; // multiply the light color with the material color.
+            result += rec.mat->brdf(rec, l, ogRay.d) * radiance; // multiply the light color with the material color.
             // result += radiance;
         }
     }
