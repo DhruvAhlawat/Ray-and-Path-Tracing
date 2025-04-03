@@ -73,7 +73,7 @@ int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
-    Camera camera(w,h, vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0)); 
+    Camera camera(w,h, vec3(0,0,-1), vec3(0,0,-1), vec3(0,1,0)); 
     scene.camera = &camera;
 
     part3(scene);
