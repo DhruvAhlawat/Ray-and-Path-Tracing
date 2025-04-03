@@ -23,7 +23,7 @@ void part1(Scene &scene)
 void part3(Scene &scene)
 {
     part1(scene); //sets up sphere objects.
-    color intensity = color(5, 5, 5); // white light.
+    color intensity = color(2, 2, 2); // white light.
     scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
     scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 }
@@ -37,8 +37,8 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
         // cout << "hit at: " << rec.p.x << " " << rec.p.y << " " << rec.p.z << endl;
         // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
         // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
-        c = getFixedRadiance(ray, rec, scene);
-        // color radiance = specularRadiance(ray, rec, scene, 2); // get the color from the ray.
+        // c = getFixedRadiance(ray, rec, scene);
+        c = specularRadiance(ray, rec, scene, 2); // get the color from the ray.
         // c = radiance;
         // Now, we can get the color from the material.
         // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
