@@ -12,17 +12,13 @@ void initializeObjects(Scene &scene)
 }
 
 
-int main() {
-    int w = 800, h = 600;
-    HDRImage image(w, h);
-    Scene scene;
-
-    initializeObjects(scene);
+void sendRays(Scene &scene, HDRImage &image)
+{
     // Ray trace the image
-    for (int j = 0; j < h; j++) {   
-        for (int i = 0; i < w; i++) {
-            float x = 2 * (i + 0.5f) / w - 1;
-            float y = 1 - 2 * (j + 0.5f) / h;
+    for (int j = 0; j < image.h; j++) {   
+        for (int i = 0; i < image.w; i++) {
+            float x = 2 * (i + 0.5f) / image.w - 1;
+            float y = 1 - 2 * (j + 0.5f) / image.h;
             Ray ray = scene.camera->make_ray(x, y);
             color c = glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
             HitRecord rec = getRayHit(ray, scene);
@@ -31,7 +27,7 @@ int main() {
                 // If the ray hits an object, get the color from the material
                 // c = rec.mat->emission(rec, ray.d);
                 c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
-                cout << rec.n.x << ", " << rec.n.y << ", " << rec.n.z << endl;
+                // cout << rec.n.x << ", " << rec.n.y << ", " << rec.n.z << endl;
 
             }
             else
@@ -41,7 +37,16 @@ int main() {
             image.pixel(i, j) = c;
         }
     }
+}
 
+int main() {
+    int w = 800, h = 600;
+    HDRImage image(w, h);
+    Scene scene;
+
+    initializeObjects(scene);
+    // Ray trace the image
+    sendRays(scene, image); 
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL init failed: " << SDL_GetError() << std::endl;
         return 1;
@@ -63,21 +68,21 @@ int main() {
     SDL_FreeSurface(tempSurface);
 
     // Render loop
-    bool quit = false;
-    SDL_Event e;
-    while (!quit) {
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) quit = true;
-        }
-        SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, texture, nullptr, nullptr);
-        SDL_RenderPresent(renderer);
-        SDL_Delay(16); // ~60fps idle
-    }
+    // bool quit = false;
+    // SDL_Event e;
+    // while (!quit) {
+    //     while (SDL_PollEvent(&e)) {
+    //         if (e.type == SDL_QUIT) quit = true;
+    //     }
+    //     SDL_RenderClear(renderer);
+    //     SDL_RenderCopy(renderer, texture, nullptr, nullptr);
+    //     SDL_RenderPresent(renderer);
+    //     SDL_Delay(16); // ~60fps idle
+    // }
 
-    SDL_DestroyTexture(texture);
-    SDL_DestroyRenderer(renderer);
-    SDL_DestroyWindow(window);
-    SDL_Quit();
+    // SDL_DestroyTexture(texture);
+    // SDL_DestroyRenderer(renderer);
+    // SDL_DestroyWindow(window);
+    // SDL_Quit();
     return 0;
 }
