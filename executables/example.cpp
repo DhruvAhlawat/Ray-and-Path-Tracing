@@ -8,18 +8,21 @@
 void part1(Scene &scene)
 {
 
-    Material *diffuse_red = new Lambertian(color(1, 1, 0));
+    Material *diffuse_red = new Lambertian(color(1, 0, 0));
+    Material *diffuse_yellow = new Lambertian(color(1, 1, 0));
 
     Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_red);
     scene.objects.push_back(unitSphere);
-    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_red);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_yellow);
     scene.objects.push_back(bigSphere);
 }
 
 void part3(Scene &scene)
 {
     part1(scene); //sets up sphere objects.
-    scene.lights.emplace_back(vec3(1,1,-1), vec3(1,1,1)); // white point light.
+    color intensity = color(0.4, 0.4, 0.4); // white light.
+    scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
+    scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 }
 
 
@@ -66,7 +69,7 @@ int main() {
 
     // Convert HDRImage to a simple RGBA buffer
     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, w, h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-    tonemap(image, tempSurface, 2.2, 2.2);
+    tonemap(image, tempSurface, 1, 2.2);
     IMG_SavePNG(tempSurface, "out/out.png"); //make a folder "out" that is untracked in git.
     SDL_FreeSurface(tempSurface);
 

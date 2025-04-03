@@ -82,10 +82,11 @@ color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat)
         if(!getRayHit(ray, scene, Interval(bias, distance - bias)).hit) // check if the ray hits any object.
         {
             color radiance = light.intensity * glm::max(glm::dot(normal, -l), 0.0f) / (distance * distance); // add the light color to the result.
-            // cout << "light intensity: " << light.intensity.x << " " << light.intensity.y << " " << light.intensity.z << endl;
+            {  // cout << "light intensity: " << light.intensity.x << " " << light.intensity.y << " " << light.intensity.z << endl;
             // cout << "normal: " << normal.x << " " << normal.y << " " << normal.z << endl;
             // cout << "light direction : " << l.x << " " << l.y << " " << l.z << endl;
             // cout << "ray hit, : color = " << radiance.x << " " << radiance.y << " " << radiance.z << endl;
+            }
             result += mat->brdf(rec, l, -ray.d) * radiance; // multiply the light color with the material color.
         }
     }
