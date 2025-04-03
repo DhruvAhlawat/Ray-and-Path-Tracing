@@ -22,30 +22,115 @@ bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
     return true;
 }
 
-bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const
-{
-    // Ray-sphere intersection. 
-    //First we check distance from center of sphere and ray line. 
-    //Then we check if the distance is less than the radius of the sphere.
+// bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const
+// {
+//     // Ray-sphere intersection. 
+//     //First we check distance from center of sphere and ray line. 
+//     //Then we check if the distance is less than the radius of the sphere.
 
-    vec3 oc = ray.o - c; // vector from ray origin to sphere center
+//     vec3 oc = ray.o - c; // vector from ray origin to sphere center
+//     float a = glm::dot(ray.d, ray.d);
+//     float b = 2.0f * glm::dot(oc, ray.d);
+//     float c = glm::dot(oc, oc) - r*r;   
+//     float discriminant = b*b - 4*a*c;
+
+//     if(discriminant < 0) return false; // no intersection
+//     float t1 = (-b - sqrt(discriminant)) / (2.0f * a); // first root
+//     float t2 = (-b + sqrt(discriminant)) / (2.0f * a); // second root
+//     if(t1 > t2) std::swap(t1, t2); // swap if t1 is greater than t2
+//     if(t1 < t_range.min) t1 = t2; // if t1 is less than min, use t2
+//     if(t1 < t_range.min || t1 > t_range.max) return false; // if t1 is out of range, return false
+//     rec.t = t1; // setting hit time
+
+//     rec.p = ray.at(t1); // setting hit point
+//     rec.n = normalize((rec.p - c)); // setting normal
+//     // rec.mat = mat; // setting material
+//     return true; // intersection found
+// }
+
+bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const {
+    glm::vec3 oc = ray.o - c;
     float a = glm::dot(ray.d, ray.d);
     float b = 2.0f * glm::dot(oc, ray.d);
-    float c = glm::dot(oc, oc) - r*r;   
-    float discriminant = b*b - 4*a*c;
+    float c_val = glm::dot(oc, oc) - r * r;
 
-    if(discriminant < 0) return false; // no intersection
-    float t1 = (-b - sqrt(discriminant)) / (2.0f * a); // first root
-    float t2 = (-b + sqrt(discriminant)) / (2.0f * a); // second root
-    if(t1 > t2) std::swap(t1, t2); // swap if t1 is greater than t2
-    if(t1 < t_range.min) t1 = t2; // if t1 is less than min, use t2
-    if(t1 < t_range.min || t1 > t_range.max) return false; // if t1 is out of range, return false
-    rec.t = t1; // setting hit time
+    float D = b * b - 4 * a * c_val;
 
-    rec.p = ray.at(t1); // setting hit point
-    rec.n = normalize((rec.p - c)); // setting normal
-    // rec.mat = mat; // setting material
-    return true; // intersection found
+    if (D < 0) return false; 
+
+    float sqrtD = sqrt(D);
+
+    // nearest valid t
+    float t = (-b - sqrtD) / (2.0f * a);
+    if (t < t_range.min || t > t_range.max) {
+        t = (-b + sqrtD) / (2.0f * a);
+        if (t < t_range.min || t > t_range.max) {
+            return false;
+        }
+    }
+
+    rec.t = t;
+    rec.p = ray.o + t * ray.d;
+    rec.n = glm::normalize(rec.p - c);
+
+    return true;
+}
+
+bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {
+    float t_min = t_range.min;
+    float t_max = t_range.max;
+    int hit_axis = -1;
+
+    for (int i = 0; i < 3; i++) {
+        if (ray.d[i] == 0.0f) {  // ray parallel to axis
+            if (ray.o[i] < min_corner[i] || ray.o[i] > max_corner[i]) {
+                return false;
+            }
+            continue;   
+        }
+
+        float invD = 1.0f / ray.d[i];
+        float t0 = (min_corner[i] - ray.o[i]) * invD;
+        float t1 = (max_corner[i] - ray.o[i]) * invD;
+
+        if (invD < 0) std::swap(t0, t1);
+
+        if (t0 > t_min) {
+            t_min = t0;
+            hit_axis = i;
+        }
+        t_max = std::min(t_max, t1);
+
+        if (t_max <= t_min) return false;
+    }
+
+    rec.t = t_min;
+    rec.p = ray.o + t_min * ray.d;
+
+    glm::vec3 normal(0.0f);
+    if (hit_axis != -1) {
+        normal[hit_axis] = (rec.p[hit_axis] == min_corner[hit_axis]) ? -1.0f : 1.0f;
+    }
+    rec.n = normal;
+
+    return true;
+}
+
+bool Plane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
+    float denom = glm::dot(normal, ray.d);
+
+    // if the ray parallel to plane
+    if (fabs(denom) < 1e-6) return false; 
+
+    float t = (d - glm::dot(normal, ray.o)) / denom;
+
+    if (t < t_range.min || t > t_range.max) return false;
+
+    rec.t = t;
+    rec.p = ray.o + t * ray.d;
+    rec.n = normal;  // constant normal
+
+    return true;
 }
 
 HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range)
