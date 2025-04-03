@@ -133,7 +133,25 @@ class Box: public Shape {
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
     };
     
+class SquarePlane : public Shape {
+public:
+    glm::vec3 c;   // Center of square
+    glm::vec3 n;   // Normal vector
+    glm::vec3 u, v; // Basis vectors
+    float s;       // Half-length of the square
 
+    SquarePlane(glm::vec3 center, glm::vec3 normal, float size)
+        : c(center), n(glm::normalize(normal)), s(size)
+    {
+        // Create two perpendicular basis vectors (u, v) for the plane
+        glm::vec3 temp = (fabs(n.x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
+        u = glm::normalize(glm::cross(temp, n));  // First basis vector
+        v = glm::normalize(glm::cross(n, u));     // Second basis vector
+    }
+
+    virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const override;
+};
+        
 class Material {
 public:
     color albedo;

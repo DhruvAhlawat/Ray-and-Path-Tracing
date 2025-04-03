@@ -91,7 +91,7 @@ bool Plane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
     float denom = glm::dot(normal, ray.d);
 
     // if the ray parallel to plane
-    if (fabs(denom) < 1e-6) return false; 
+    if (fabs(denom) < 1e-6) return false;
 
     float t = (d - glm::dot(normal, ray.o)) / denom;
 
@@ -103,6 +103,33 @@ bool Plane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
 
     return true;
 }
+
+bool SquarePlane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
+    // Ray-plane intersection test
+    float denom = glm::dot(n, ray.d);
+    if (fabs(denom) < 1e-6) return false;  // Ray parallel to plane
+
+    float t = glm::dot(c - ray.o, n) / denom;
+    if (t < t_range.min || t > t_range.max) return false;  // Outside range
+
+    // intersection point
+    glm::vec3 p = ray.o + t * ray.d;
+    
+    // Convert to square's local coordinate system
+    glm::vec3 d = p - c;
+    float u_proj = glm::dot(d, u);  // Project onto local U-axis
+    float v_proj = glm::dot(d, v);  // Project onto local V-axis
+
+    // Check if intersection is within the square bounds
+    if (fabs(u_proj) > s || fabs(v_proj) > s) return false;
+
+    rec.t = t;
+    rec.p = p;
+    rec.n = n;
+
+    return true;
+}
+
 
 HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range)
 {
