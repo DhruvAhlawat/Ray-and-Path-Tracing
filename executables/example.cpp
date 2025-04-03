@@ -25,6 +25,21 @@ void part3(Scene &scene)
     scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 }
 
+color singleBouncePixelColor(Ray &ray, Scene &scene)
+{
+    color c = color(0,0,0); //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+    HitRecord rec = getRayHit(ray, scene);
+    if (rec.hit) 
+    {
+        // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
+        // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
+        color radiance = getFixedRadiance(rec.p, rec.n, scene, rec.mat);
+        c = radiance;
+        // Now, we can get the color from the material.
+        // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
+    }
+    return c;
+}
 
 void sendRays(Camera &camera, Scene &scene, HDRImage &image)
 {
@@ -34,18 +49,7 @@ void sendRays(Camera &camera, Scene &scene, HDRImage &image)
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;
             Ray ray = scene.camera->make_ray(x, y);
-            color c = color(0,0,0); //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
-            HitRecord rec = getRayHit(ray, scene);
-            if (rec.hit) 
-            {
-                // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
-                // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
-                color radiance = getFixedRadiance(rec.p, rec.n, scene, rec.mat);
-                c = radiance;
-                // Now, we can get the color from the material.
-                // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
-            }
-            image.pixel(i, j) = c;
+            image.pixel(i, j) = singleBouncePixelColor(ray, scene); // get the color from the ray.
         }
     }
 }
