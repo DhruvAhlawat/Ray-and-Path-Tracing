@@ -15,6 +15,8 @@ void part1(Scene &scene)
     Material *metallic_red = new Metallic(color(0.7, 0, 0));
 
     mat4 transform = mat4(1.0f);
+    transform = translate(transform, vec3(0, 0, -2));
+    transform = rotate(transform, 1.5f, vec3(0, 1, 0));
 
     Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f, transform), diffuse_yellow );
     scene.objects.push_back(unitSphere);
@@ -24,7 +26,7 @@ void part1(Scene &scene)
 
 void part2(Scene &scene){
     mat4 transform = mat4(1.0f);
-
+    
     Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0), transform), nullptr );
     Object *plane = new Object(new Plane(glm::vec3(0.0, -1.0, 0.0), -1, transform), nullptr );
     scene.objects.push_back(box);

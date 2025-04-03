@@ -159,13 +159,13 @@ class Box: public Shape {
 
 class SquarePlane : public Shape {
 public:
-    glm::vec3 c;   // Center of square
+    glm::vec3 center;   // Center of square
     glm::vec3 n;   // Normal vector
     glm::vec3 u, v; // Basis vectors
     float s;       // Half-length of the square
 
-    SquarePlane(glm::vec3 center, glm::vec3 normal, float size)
-        : c(center), n(glm::normalize(normal)), s(size), Shape(glm::mat4(1.0f))
+    SquarePlane(glm::vec3 center, glm::vec3 normal, float size, mat4 transform)
+        : center(center), n(glm::normalize(normal)), s(size), Shape(transform)
     {
         // Create two perpendicular basis vectors (u, v) for the plane
         glm::vec3 temp = (fabs(n.x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
@@ -194,14 +194,12 @@ public:
     virtual bool reflection(const HitRecord &rec, glm::vec3 v,
                             glm::vec3 &r, color &kr) const
     {
-
         return false;
     }
 
     Lambertian(color albedo):
         albedo(albedo) {
     }
-
 };
 
 class Metallic: public Material 
