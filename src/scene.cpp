@@ -157,6 +157,15 @@ color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
 
 }
 
+color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
+{
+    color c = albedo;
+    vec3 r = reflect(v, rec.n);
+    return c * glm::max(glm::dot(r, l), 0.0f); // specular reflection.
+
+}
+
+
 color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth)
 {
     if(recursionDepth <= 0) return scene.sky; //no computations here.

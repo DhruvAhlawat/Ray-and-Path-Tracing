@@ -181,6 +181,23 @@ public:
 
 };
 
+class SpecularMaterial: public Material {
+public:
+    color albedo;
+    virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
+    virtual bool reflection(const HitRecord &rec, glm::vec3 v,
+                            glm::vec3 &r, color &kr) const
+    {
+        r = reflect(v, rec.n);
+        kr = albedo;
+        return true;
+    }
+    SpecularMaterial(color albedo):
+        albedo(albedo) {
+    }
+};
+
+
 class Metallic: public Material 
 {
     public:
@@ -190,7 +207,8 @@ class Metallic: public Material
                             glm::vec3 &r, color &kr) const
     {
         r = reflect(v, rec.n);
-        kr = albedo;
+        float costheta = (glm::dot(v, rec.n)/(glm::length(v) * glm::length(rec.n)));
+        kr = (albedo + (1.0f - albedo) * (float)pow((1 - costheta), 5));
         return true;
     }
     Metallic(color albedo):

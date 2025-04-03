@@ -29,11 +29,11 @@ void specular_scene(Scene &scene)
     Material *diffuse_grey = new Lambertian(color(0.8, 0.8, 0.8));
     Material *diffuse_blue = new Lambertian(color(0.1, 0.1, 0.8));
 
-    Material *metallic_red = new Metallic(color(0.7, 0.1, 0.1));
+    Material *metallic_red = new Metallic(color(0.9, 0.1, 0.1));
     Material *metallic_green = new Metallic(color(0.1, 0.7, 0.1));
     Material *metallic_blue = new Metallic(color(0.1, 0.1, 0.7));
     
-    Material *mirror = new Metallic(color(0.9, 0.9, 0.9));
+    Material *mirror = new SpecularMaterial(color(0.9, 0.9, 0.9));
 
     Object *unitSphere = new Object(new Sphere(glm::vec3(0.3, 0.2, -2), 1), mirror);
     scene.objects.push_back(unitSphere);
