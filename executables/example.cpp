@@ -14,20 +14,21 @@ void part1(Scene &scene)
 
     Material *metallic_red = new Metallic(color(0.7, 0, 0));
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_yellow);
+    mat4 transform = mat4(1.0f);
+
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f, transform), diffuse_yellow );
     scene.objects.push_back(unitSphere);
-    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_grey);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f, transform), diffuse_grey);
     scene.objects.push_back(bigSphere);
 }
 
 void part2(Scene &scene){
-    Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0)), nullptr );
-    // Object *plane = new Object(new Plane(glm::vec3(1.0,2.0,1.0), 0.2), nullptr );
+    mat4 transform = mat4(1.0f);
+
+    Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0), transform), nullptr );
+    Object *plane = new Object(new Plane(glm::vec3(0.0, -1.0, 0.0), -1, transform), nullptr );
     scene.objects.push_back(box);
-    color intensity = color(2, 2, 2); // white light.
-    scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
-    scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
-    // scene.objects.push_back(plane);
+    scene.objects.push_back(plane);
 }
 
 void part3(Scene &scene)
@@ -40,7 +41,8 @@ void part3(Scene &scene)
 
 color singleBouncePixelColor(Ray &ray, Scene &scene)
 {
-    color c = color(0,0,0); //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+    color c = color(0,0,0);
+    // c = glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
     HitRecord rec = getRayHit(ray, scene);
     if (rec.hit) 
     {
@@ -73,7 +75,7 @@ int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
-    Camera camera(w,h, vec3(0,0,-1), vec3(0,0,-1), vec3(0,1,0)); 
+    Camera camera(w,h, vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0)); 
     scene.camera = &camera;
 
     part3(scene);

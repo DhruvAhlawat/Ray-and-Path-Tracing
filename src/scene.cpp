@@ -132,7 +132,6 @@ bool SquarePlane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
     return true;
 }
 
-
 HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range)
 {
     HitRecord rec;
