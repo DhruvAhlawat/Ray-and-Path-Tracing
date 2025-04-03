@@ -20,6 +20,13 @@ void part1(Scene &scene)
     scene.objects.push_back(bigSphere);
 }
 
+void part2(Scene &scene){
+    Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0)), nullptr );
+    // Object *plane = new Object(new Plane(glm::vec3(1.0,2.0,1.0), 0.2), nullptr );
+    scene.objects.push_back(box);
+    // scene.objects.push_back(plane);
+}
+
 void part3(Scene &scene)
 {
     part1(scene); //sets up sphere objects.
@@ -66,7 +73,7 @@ int main() {
     Camera camera(w,h); 
     scene.camera = &camera;
 
-    part3(scene);
+    part1(scene);
 
     // Ray trace the image
     sendRays(camera, scene, image); 
