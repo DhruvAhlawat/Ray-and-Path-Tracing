@@ -8,12 +8,12 @@
 
 void demo_part1(Scene &scene)
 {
-
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
+    mat4 transform = mat4(1.0f);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f, transform), nullptr);
     scene.objects.push_back(unitSphere);
 
 
-    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), nullptr);
+    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f, transform), nullptr);
     scene.objects.push_back(sphere2);
 }
 
@@ -34,17 +34,40 @@ void specular_scene(Scene &scene)
     Material *metallic_blue = new Metallic(color(0.1, 0.1, 0.7));
     
     Material *mirror = new SpecularMaterial(color(0.9, 0.9, 0.9));
-
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0.3, 0.2, -2), 1), mirror);
+    mat4 transform = mat4(1.0f);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0.3, 0.2, -2), 1, transform), mirror);
     scene.objects.push_back(unitSphere);
 
 
-    Object *sphere2 = new Object(new Sphere(glm::vec3(-0.6, -0.2, -0.9), 0.2f), metallic_red);
+    Object *sphere2 = new Object(new Sphere(glm::vec3(-0.6, -0.2, -0.9), 0.2f, transform), metallic_red);
     scene.objects.push_back(sphere2);
 
 
-    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 6), diffuse_yellow);
+    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 6, transform), diffuse_yellow);
     scene.objects.push_back(ground);
+    Material *diffuse_red = new Lambertian(color(0.7, 0, 0));
+    Material *diffuse_yellow = new Lambertian(color(0.8, 0.8, 0));
+    Material *diffuse_grey = new Lambertian(color(0.8, 0.8, 0.8));
+
+    Material *metallic_red = new Metallic(color(0.7, 0, 0));
+
+    mat4 transform = mat4(1.0f);
+    transform = translate(transform, vec3(0, 0, -2));
+    transform = rotate(transform, 1.5f, vec3(0, 1, 0));
+
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f, transform), diffuse_yellow );
+    scene.objects.push_back(unitSphere);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f, transform), diffuse_grey);
+    scene.objects.push_back(bigSphere);
+}
+
+void part2(Scene &scene){
+    mat4 transform = mat4(1.0f);
+    
+    Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0), transform), nullptr );
+    Object *plane = new Object(new Plane(glm::vec3(0.0, -1.0, 0.0), -1, transform), nullptr );
+    scene.objects.push_back(box);
+    scene.objects.push_back(plane);
 }
 
 void part3(Scene &scene)
@@ -91,7 +114,7 @@ int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
-    Camera camera(w,h); 
+    Camera camera(w,h, vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0)); 
     scene.camera = &camera;
 
     specular_scene(scene); //sets up the scene with objects and lights for the specular part.

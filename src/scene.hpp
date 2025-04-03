@@ -47,18 +47,31 @@ public:
 };
 
 class Camera {
-public:
-    int w, h;
-    float aspectRatio;
-    Camera (int w, int h)
-    {
-        this->w = w;
-        this->h = h;
-        this->aspectRatio = (float)w / (float)h;
-    }
-    Ray make_ray(float x, float y) const; // screen coordinates in [-1, 1]
-};
-
+    public:
+        int w, h;
+        float aspectRatio;
+        glm::vec3 eye, view, up;
+        glm::mat4 camToWorld;
+    
+        Camera(int w, int h, glm::vec3 eye, glm::vec3 target, glm::vec3 up) 
+            : w(w), h(h), aspectRatio((float)w / (float)h), eye(eye), up(glm::normalize(up)) 
+        {
+            view = glm::normalize(target - eye);  // Compute the forward direction
+            glm::vec3 right = glm::normalize(glm::cross(view, up));  // Right vector
+            glm::vec3 newUp = glm::cross(right, view);  // Recomputed orthogonal up
+    
+            // Construct camera-to-world transformation matrix
+            camToWorld = glm::mat4(
+                glm::vec4(right, 0),
+                glm::vec4(newUp, 0),
+                glm::vec4(-view, 0),
+                glm::vec4(eye, 1)
+            );
+        }
+    
+        Ray make_ray(float x, float y) const;
+    };
+    
 class Interval {
 public:
     float min, max;
@@ -97,27 +110,38 @@ public:
 
 class Shape {
 public:
+    glm::mat4 modelToWorld;
+    glm::mat4 worldToModel;
+    glm::mat4 normalTransform;
+
+    Shape(glm::mat4 transform) : modelToWorld(transform) {
+        worldToModel = glm::inverse(transform);
+        normalTransform = glm::transpose(worldToModel);
+    }
+
     virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const = 0;
 };
+    
 
-class Sphere: public Shape {
+class Sphere : public Shape {
 public:
     glm::vec3 center;
     float radius;
-    Sphere(glm::vec3 center, float radius):
-        center(center),
-        radius(radius) {
-    }
-    virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
+
+    Sphere(glm::vec3 center, float radius, glm::mat4 transform)
+        : Shape(transform), center(center), radius(radius) {}
+
+    virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const override;
 };
+    
 
 class Plane: public Shape {
     public:
         glm::vec3 normal;  // plane normal
         float d;           // signed distance from origin
     
-        Plane(glm::vec3 normal, float d):
-            normal(glm::normalize(normal)), d(d) {} 
+        Plane(glm::vec3 normal, float d, glm::mat4 transform):
+            Shape(transform), normal(glm::normalize(normal)), d(d) {} 
         
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
     };
@@ -128,21 +152,21 @@ class Box: public Shape {
         glm::vec3 min_corner;
         glm::vec3 max_corner;
     
-        Box(glm::vec3 min_corner, glm::vec3 max_corner)
-            : min_corner(min_corner), max_corner(max_corner) {}
+        Box(glm::vec3 min_corner, glm::vec3 max_corner, glm::mat4 transform)
+            : Shape(transform), min_corner(min_corner), max_corner(max_corner) {}
     
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
     };
-    
+
 class SquarePlane : public Shape {
 public:
-    glm::vec3 c;   // Center of square
+    glm::vec3 center;   // Center of square
     glm::vec3 n;   // Normal vector
     glm::vec3 u, v; // Basis vectors
     float s;       // Half-length of the square
 
-    SquarePlane(glm::vec3 center, glm::vec3 normal, float size)
-        : c(center), n(glm::normalize(normal)), s(size)
+    SquarePlane(glm::vec3 center, glm::vec3 normal, float size, mat4 transform)
+        : center(center), n(glm::normalize(normal)), s(size), Shape(transform)
     {
         // Create two perpendicular basis vectors (u, v) for the plane
         glm::vec3 temp = (fabs(n.x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
@@ -152,7 +176,7 @@ public:
 
     virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const override;
 };
-        
+
 class Material {
 public:
     color albedo;
@@ -171,14 +195,12 @@ public:
     virtual bool reflection(const HitRecord &rec, glm::vec3 v,
                             glm::vec3 &r, color &kr) const
     {
-
         return false;
     }
 
     Lambertian(color albedo):
         albedo(albedo) {
     }
-
 };
 
 class SpecularMaterial: public Material {
