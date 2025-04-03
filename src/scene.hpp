@@ -101,11 +101,11 @@ public:
 
 class Sphere: public Shape {
 public:
-    glm::vec3 c;
-    float r;
+    glm::vec3 center;
+    float radius;
     Sphere(glm::vec3 center, float radius):
-        c(center),
-        r(radius) {
+        center(center),
+        radius(radius) {
     }
     virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
 };

@@ -22,58 +22,30 @@ bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
     return true;
 }
 
-// bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const
-// {
-//     // Ray-sphere intersection. 
-//     //First we check distance from center of sphere and ray line. 
-//     //Then we check if the distance is less than the radius of the sphere.
+bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const
+{
+    // Ray-sphere intersection. 
+    //First we check distance from center of sphere and ray line. 
+    //Then we check if the distance is less than the radius of the sphere.
 
-//     vec3 oc = ray.o - c; // vector from ray origin to sphere center
-//     float a = glm::dot(ray.d, ray.d);
-//     float b = 2.0f * glm::dot(oc, ray.d);
-//     float c = glm::dot(oc, oc) - r*r;   
-//     float discriminant = b*b - 4*a*c;
-
-//     if(discriminant < 0) return false; // no intersection
-//     float t1 = (-b - sqrt(discriminant)) / (2.0f * a); // first root
-//     float t2 = (-b + sqrt(discriminant)) / (2.0f * a); // second root
-//     if(t1 > t2) std::swap(t1, t2); // swap if t1 is greater than t2
-//     if(t1 < t_range.min) t1 = t2; // if t1 is less than min, use t2
-//     if(t1 < t_range.min || t1 > t_range.max) return false; // if t1 is out of range, return false
-//     rec.t = t1; // setting hit time
-
-//     rec.p = ray.at(t1); // setting hit point
-//     rec.n = normalize((rec.p - c)); // setting normal
-//     // rec.mat = mat; // setting material
-//     return true; // intersection found
-// }
-
-bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const {
-    glm::vec3 oc = ray.o - c;
+    vec3 oc = ray.o - center; // vector from ray origin to sphere center
     float a = glm::dot(ray.d, ray.d);
     float b = 2.0f * glm::dot(oc, ray.d);
-    float c_val = glm::dot(oc, oc) - r * r;
+    float c = glm::dot(oc, oc) - radius*radius;   
+    float discriminant = b*b - 4*a*c;
 
-    float D = b * b - 4 * a * c_val;
+    if(discriminant < 0) return false; // no intersection
+    float t1 = (-b - sqrt(discriminant)) / (2.0f * a); // first root
+    float t2 = (-b + sqrt(discriminant)) / (2.0f * a); // second root
+    if(t1 > t2) std::swap(t1, t2); // swap if t1 is greater than t2
+    if(t1 < t_range.min) t1 = t2; // if t1 is less than min, use t2
+    if(t1 < t_range.min || t1 > t_range.max) return false; // if t1 is out of range, return false
+    rec.t = t1; // setting hit time
 
-    if (D < 0) return false; 
-
-    float sqrtD = sqrt(D);
-
-    // nearest valid t
-    float t = (-b - sqrtD) / (2.0f * a);
-    if (t < t_range.min || t > t_range.max) {
-        t = (-b + sqrtD) / (2.0f * a);
-        if (t < t_range.min || t > t_range.max) {
-            return false;
-        }
-    }
-
-    rec.t = t;
-    rec.p = ray.o + t * ray.d;
-    rec.n = glm::normalize(rec.p - c);
-
-    return true;
+    rec.p = ray.at(t1); // setting hit point
+    rec.n = normalize((rec.p - this->center)); // setting normal
+    rec.hit = true; // setting hit flag
+    return true; // intersection found
 }
 
 bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {
@@ -100,7 +72,6 @@ bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {
             hit_axis = i;
         }
         t_max = std::min(t_max, t1);
-
         if (t_max <= t_min) return false;
     }
 
@@ -191,7 +162,7 @@ color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionD
 color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
 {
     color result(0.0);
-    float bias = 0.001; // bias to avoid self-shadowing
+    float bias = 0.1; // bias to avoid self-shadowing
     for(auto &light : scene.lights)
     {
 
@@ -199,21 +170,21 @@ color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
         float distance = glm::length(l);
         l = normalize(l);
         // HitRecord rec;
-        Ray ray(rec.p + bias * rec.n, l); //first move a little in that direction.
-
+        Ray ray(rec.p, l); //first move a little in that direction.
         HitRecord newRec = getRayHit(ray, scene, Interval(bias, distance - bias));
         if(!newRec.hit) // check if the ray hits any object.
         {
-            color radiance = light.intensity * glm::max(glm::dot(rec.n, -l), 0.0f) / (distance * distance); // add the light color to the result.
+            color radiance = light.intensity * glm::max(glm::dot(rec.n, l), 0.0f) / (distance * distance); // add the light color to the result.
             {  // cout << "light intensity: " << light.intensity.x << " " << light.intensity.y << " " << light.intensity.z << endl;
             // cout << "normal: " << normal.x << " " << normal.y << " " << normal.z << endl;
             // cout << "light direction : " << l.x << " " << l.y << " " << l.z << endl;
             // cout << "ray hit, : color = " << radiance.x << " " << radiance.y << " " << radiance.z << endl;
             }
-            result += rec.mat->brdf(rec, l, ogRay.d) * radiance; // multiply the light color with the material color.
+            result += rec.mat->brdf(rec, l, -ogRay.d) * radiance; // multiply the light color with the material color.
             // result += radiance;
         }
     }
+    // cout << "result color = " << result.x << " " << result.y << " " << result.z << endl;
     return result;
 }
 
