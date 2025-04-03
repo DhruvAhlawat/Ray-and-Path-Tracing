@@ -12,7 +12,7 @@ void initializeObjects(Scene &scene)
 }
 
 
-void sendRays(Scene &scene, HDRImage &image)
+void sendRays(Camera &camera, Scene &scene, HDRImage &image)
 {
     // Ray trace the image
     for (int j = 0; j < image.h; j++) {   
@@ -43,30 +43,34 @@ int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
+    Camera camera(w,h); 
+    scene.camera = &camera;
 
     initializeObjects(scene);
+
     // Ray trace the image
-    sendRays(scene, image); 
+    sendRays(camera, scene, image); 
+    
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL init failed: " << SDL_GetError() << std::endl;
         return 1;
     }
 
-    SDL_Window* window = SDL_CreateWindow("Image Display", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_SHOWN);
-    SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, w, h);
-
     // Convert HDRImage to a simple RGBA buffer
     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, w, h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     tonemap(image, tempSurface, 1, 1);
-
-    // Update texture from surface
-    SDL_UpdateTexture(texture, nullptr, tempSurface->pixels, tempSurface->pitch);
-    
     IMG_SavePNG(tempSurface, "out/out.png"); //make a folder "out" that is untracked in git.
-
     SDL_FreeSurface(tempSurface);
 
+
+
+    // SDL_Window* window = SDL_CreateWindow("Image Display", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_SHOWN);
+    // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
+    // SDL_Texture* texture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STREAMING, w, h);
+
+
+    // Update texture from surface
+    // SDL_UpdateTexture(texture, nullptr, tempSurface->pixels, tempSurface->pitch);
     // Render loop
     // bool quit = false;
     // SDL_Event e;

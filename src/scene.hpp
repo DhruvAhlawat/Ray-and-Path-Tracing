@@ -5,6 +5,7 @@
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/matrix_inverse.hpp>
 #include <vector>
+#include<iostream>
 
 using namespace glm; 
 using namespace std;
@@ -41,6 +42,14 @@ public:
 
 class Camera {
 public:
+    int w, h;
+    float aspectRatio;
+    Camera (int w, int h)
+    {
+        this->w = w;
+        this->h = h;
+        this->aspectRatio = (float)w / (float)h;
+    }
     Ray make_ray(float x, float y) const; // screen coordinates in [-1, 1]
 };
 

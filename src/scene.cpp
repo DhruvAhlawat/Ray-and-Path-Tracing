@@ -2,12 +2,17 @@
 
 Ray Camera::make_ray(float x, float y) const {
     // FIXME! //brah what is there to fix?
-    return Ray(glm::vec3(0,0,0), glm::vec3(x, y, -1)); //basically the image is displayed at a location of -z.
+    //ok so there is something to fix, the normalizisation of the direction possibly.
+    float image_x = x * aspectRatio; // Adjust X based on aspect ratio
+    float image_y = y;
+    return Ray(glm::vec3(0,0,0), normalize(glm::vec3(image_x, image_y, -1))); //basically the image is displayed at a location of -z.
+
 }
 
 
 bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
 {
+    // std::cout << "Object::hit" << std::endl;
     // Check if the ray hits the shape of the object.
     bool hit = shape->hit(ray, t_range, rec);
     if(!hit) return false;
@@ -16,7 +21,6 @@ bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
     rec.hit = true;
     return true;
 }
-
 
 bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const
 {
