@@ -1,5 +1,6 @@
 #include "scene.hpp"
 
+
 Ray Camera::make_ray(float x, float y) const {
     // FIXME! //brah what is there to fix?
     //ok so there is something to fix, the normalizisation of the direction possibly.
@@ -8,7 +9,6 @@ Ray Camera::make_ray(float x, float y) const {
     return Ray(glm::vec3(0,0,0), normalize(glm::vec3(image_x, image_y, -1))); //basically the image is displayed at a location of -z.
 
 }
-
 
 bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
 {
@@ -59,5 +59,56 @@ HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range)
         }
     }
     return rec; // return the hit record object.
+}
+
+color Lambertian::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
+{
+    return albedo;
+}
+
+
+color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat)
+{
+    color result(0.0);
+    float bias = 0.01; // bias to avoid self-shadowing
+    for(auto &light : scene.lights)
+    {
+
+        vec3 l = light.location - point;
+        float distance = glm::length(l);
+        l = normalize(l);
+        HitRecord rec;
+        Ray ray(point, l); //first move a little in that direction.
+        if(!getRayHit(ray, scene, Interval(bias, distance - bias)).hit) // check if the ray hits any object.
+        {
+            color radiance = light.intensity * glm::max(glm::dot(normal, -l), 0.0f) / (distance * distance); // add the light color to the result.
+            // cout << "light intensity: " << light.intensity.x << " " << light.intensity.y << " " << light.intensity.z << endl;
+            // cout << "normal: " << normal.x << " " << normal.y << " " << normal.z << endl;
+            // cout << "light direction : " << l.x << " " << l.y << " " << l.z << endl;
+            // cout << "ray hit, : color = " << radiance.x << " " << radiance.y << " " << radiance.z << endl;
+            result += mat->brdf(rec, l, -ray.d) * radiance; // multiply the light color with the material color.
+        }
+    }
+    return result;
+}
+
+color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene)
+{
+    color result(0.0);
+    float bias = 0.01; // bias to avoid self-shadowing
+    for(auto &light : scene.lights)
+    {
+        vec3 l = light.location - point;
+        float distance = glm::length(l);
+        l = normalize(l);
+        HitRecord rec;
+        Ray ray(point, l); //first move a little in that direction.
+        if(!getRayHit(ray, scene, Interval(bias, distance - bias)).hit) // check if the ray hits any object.
+        {
+            // result += (light.intensity / (distance * distance)) ; // add the light color to the result.
+            result += light.intensity * glm::max(glm::dot(normal, l), 0.0f) / (distance * distance); // add the light color to the result.
+        }
+    }
+    return result;
 }
 

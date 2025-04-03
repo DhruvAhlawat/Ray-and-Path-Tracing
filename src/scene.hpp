@@ -126,9 +126,16 @@ public:
     color albedo;
     virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
     virtual bool reflection(const HitRecord &rec, glm::vec3 v,
-                            glm::vec3 &r, color &kr) {
+                            glm::vec3 &r, color &kr) const
+    {
+
         return false;
     }
+
+    Lambertian(color albedo):
+        albedo(albedo) {
+    }
+
 };
 
 // class Metallic: public Material {
@@ -141,10 +148,17 @@ class PointLight {
 public:
     glm::vec3 location;
     color intensity;
+
+    PointLight(glm::vec3 location, color intensity):
+        location(location),
+        intensity(intensity) {}
+
 };
 
 
 HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range = Interval(0, MAXFLOAT));
+color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene);
+color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat);
 
 
 #endif

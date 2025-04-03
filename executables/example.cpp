@@ -5,12 +5,21 @@
 #include <iostream>
 
 
-void initializeObjects(Scene &scene)
+void part1(Scene &scene)
 {
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
+
+    Material *diffuse_red = new Lambertian(color(1, 1, 0));
+
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_red);
     scene.objects.push_back(unitSphere);
-    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), nullptr);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_red);
     scene.objects.push_back(bigSphere);
+}
+
+void part3(Scene &scene)
+{
+    part1(scene); //sets up sphere objects.
+    scene.lights.emplace_back(vec3(1,1,-1), vec3(1,1,1)); // white point light.
 }
 
 
@@ -22,20 +31,16 @@ void sendRays(Camera &camera, Scene &scene, HDRImage &image)
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;
             Ray ray = scene.camera->make_ray(x, y);
-            color c = glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+            color c = color(0,0,0); //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
             HitRecord rec = getRayHit(ray, scene);
             if (rec.hit) 
             {
-                // If the ray hits an object, get the color from the material
-                // c = rec.mat->emission(rec, ray.d);
-                c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
-                // cout << rec.n.x << ", " << rec.n.y << ", " << rec.n.z << endl;
-
-
-            }
-            else
-            {
-                // c = glm::vec3(0, 0, 0);
+                // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
+                // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
+                color radiance = getFixedRadiance(rec.p, rec.n, scene, rec.mat);
+                c = radiance;
+                // Now, we can get the color from the material.
+                // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
             }
             image.pixel(i, j) = c;
         }
@@ -49,7 +54,7 @@ int main() {
     Camera camera(w,h); 
     scene.camera = &camera;
 
-    initializeObjects(scene);
+    part3(scene);
 
     // Ray trace the image
     sendRays(camera, scene, image); 
