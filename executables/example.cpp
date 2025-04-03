@@ -32,18 +32,18 @@ void specular_scene(Scene &scene)
     Material *metallic_red = new Metallic(color(0.7, 0.1, 0.1));
     Material *metallic_green = new Metallic(color(0.1, 0.7, 0.1));
     Material *metallic_blue = new Metallic(color(0.1, 0.1, 0.7));
-
+    
     Material *mirror = new Metallic(color(0.9, 0.9, 0.9));
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0.2, -2), 1), mirror);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0.3, 0.2, -2), 1), mirror);
     scene.objects.push_back(unitSphere);
 
 
-    Object *sphere2 = new Object(new Sphere(glm::vec3(-0.6, -0.2, -0.8), 0.2f), metallic_red);
+    Object *sphere2 = new Object(new Sphere(glm::vec3(-0.6, -0.2, -0.9), 0.2f), metallic_red);
     scene.objects.push_back(sphere2);
 
 
-    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 3), diffuse_yellow);
+    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 6), diffuse_yellow);
     scene.objects.push_back(ground);
 }
 

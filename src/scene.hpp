@@ -29,7 +29,8 @@ public:
     color sky;
     Scene()
     {
-        sky = color(0.5, 0.7, 1.0); // default sky color
+        // sky = color(0.5, 0.7, 1.0); // default sky color
+        sky = color(0.2, 0.4, 0.7); // default sky color
     }
 };
 
