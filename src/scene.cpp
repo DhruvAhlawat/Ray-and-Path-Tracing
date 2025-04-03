@@ -134,7 +134,7 @@ color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionD
 {
     if(recursionDepth <= 0) return scene.sky; //no computations here.
     color result(0.0f), refColor(0.0f);
-    float bias = 0.001; // bias to avoid self-shadowing
+    float bias = 0.01; // bias to avoid self-shadowing
     vec3 l;
     bool reflection = rec.mat->reflection(rec, ogRay.d, l, refColor); // reflect the ray direction.
     if(!reflection) 
@@ -152,7 +152,7 @@ color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionD
     }
     else
     {
-        result = scene.sky; // if no hit, return the sky color.
+        result = refColor * scene.sky; // if no hit, return the sky color.
     }
     return result;
 }

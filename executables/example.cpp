@@ -5,6 +5,19 @@
 #include <iostream>
 
 
+
+void demo_part1(Scene &scene)
+{
+
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
+    scene.objects.push_back(unitSphere);
+
+
+    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), nullptr);
+    scene.objects.push_back(sphere2);
+}
+
+
 void part1(Scene &scene)
 {
 
@@ -13,18 +26,18 @@ void part1(Scene &scene)
     Material *diffuse_grey = new Lambertian(color(0.8, 0.8, 0.8));
 
     Material *metallic_red = new Metallic(color(0.7, 0, 0));
+    Material *metallic_green = new Metallic(color(0, 0.7, 0));
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_yellow);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), metallic_red);
     scene.objects.push_back(unitSphere);
-    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_grey);
-    scene.objects.push_back(bigSphere);
-}
 
-void part2(Scene &scene){
-    Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0)), nullptr );
-    // Object *plane = new Object(new Plane(glm::vec3(1.0,2.0,1.0), 0.2), nullptr );
-    scene.objects.push_back(box);
-    // scene.objects.push_back(plane);
+
+    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), metallic_green);
+    scene.objects.push_back(sphere2);
+
+
+    Object *ground = new Object(new Plane(vec3(0, 1, 0), -4), diffuse_grey);
+    scene.objects.push_back(ground);
 }
 
 void part3(Scene &scene)
@@ -35,9 +48,10 @@ void part3(Scene &scene)
     scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 }
 
+
 color singleBouncePixelColor(Ray &ray, Scene &scene)
 {
-    color c = color(0,0,0); //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+    color c = scene.sky; //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
     HitRecord rec = getRayHit(ray, scene);
     if (rec.hit) 
     {
@@ -45,7 +59,7 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
         // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
         // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
         // c = getFixedRadiance(ray, rec, scene);
-        c = specularRadiance(ray, rec, scene, 2); // get the color from the ray.
+        c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
         // c = radiance;
         // Now, we can get the color from the material.
         // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
@@ -73,7 +87,7 @@ int main() {
     Camera camera(w,h); 
     scene.camera = &camera;
 
-    part1(scene);
+    part3(scene);
 
     // Ray trace the image
     sendRays(camera, scene, image); 
