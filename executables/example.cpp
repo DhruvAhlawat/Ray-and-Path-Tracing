@@ -18,31 +18,38 @@ void demo_part1(Scene &scene)
 }
 
 
-void part1(Scene &scene)
+void specular_scene(Scene &scene)
 {
+    color intensity = color(2, 2, 2); // white light.
+    scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
+    scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 
-    Material *diffuse_red = new Lambertian(color(0.7, 0, 0));
-    Material *diffuse_yellow = new Lambertian(color(0.8, 0.8, 0));
+    Material *diffuse_red = new Lambertian(color(0.7, 0.1, 0.1));
+    Material *diffuse_yellow = new Lambertian(color(0.8, 0.8, 0.1));
     Material *diffuse_grey = new Lambertian(color(0.8, 0.8, 0.8));
+    Material *diffuse_blue = new Lambertian(color(0.1, 0.1, 0.8));
 
-    Material *metallic_red = new Metallic(color(0.7, 0, 0));
-    Material *metallic_green = new Metallic(color(0, 0.7, 0));
+    Material *metallic_red = new Metallic(color(0.7, 0.1, 0.1));
+    Material *metallic_green = new Metallic(color(0.1, 0.7, 0.1));
+    Material *metallic_blue = new Metallic(color(0.1, 0.1, 0.7));
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), metallic_red);
+    Material *mirror = new Metallic(color(0.9, 0.9, 0.9));
+
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0.2, -2), 1), mirror);
     scene.objects.push_back(unitSphere);
 
 
-    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), metallic_green);
+    Object *sphere2 = new Object(new Sphere(glm::vec3(-0.6, -0.2, -0.8), 0.2f), metallic_red);
     scene.objects.push_back(sphere2);
 
 
-    Object *ground = new Object(new Plane(vec3(0, 1, 0), -4), diffuse_grey);
+    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 3), diffuse_yellow);
     scene.objects.push_back(ground);
 }
 
 void part3(Scene &scene)
 {
-    part1(scene); //sets up sphere objects.
+    demo_part1(scene); //sets up sphere objects.
     color intensity = color(2, 2, 2); // white light.
     scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
     scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
@@ -87,8 +94,7 @@ int main() {
     Camera camera(w,h); 
     scene.camera = &camera;
 
-    part3(scene);
-
+    specular_scene(scene); //sets up the scene with objects and lights for the specular part.
     // Ray trace the image
     sendRays(camera, scene, image); 
     
