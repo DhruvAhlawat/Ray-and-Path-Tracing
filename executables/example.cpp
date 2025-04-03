@@ -4,18 +4,40 @@
 #include <SDL2/SDL.h>
 #include <iostream>
 
+
+void initializeObjects(Scene &scene)
+{
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
+    scene.objects.push_back(unitSphere);
+}
+
+
 int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
 
+    initializeObjects(scene);
     // Ray trace the image
-    for (int j = 0; j < h; j++) {
+    for (int j = 0; j < h; j++) {   
         for (int i = 0; i < w; i++) {
             float x = 2 * (i + 0.5f) / w - 1;
             float y = 1 - 2 * (j + 0.5f) / h;
             Ray ray = scene.camera->make_ray(x, y);
-            color c = glm::normalize(ray.d) * 0.5f + 0.5f;
+            color c = glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+            HitRecord rec = getRayHit(ray, scene);
+            if (rec.hit) 
+            {
+                // If the ray hits an object, get the color from the material
+                // c = rec.mat->emission(rec, ray.d);
+                c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
+                cout << rec.n.x << ", " << rec.n.y << ", " << rec.n.z << endl;
+
+            }
+            else
+            {
+                // c = glm::vec3(0, 0, 0);
+            }
             image.pixel(i, j) = c;
         }
     }
@@ -36,7 +58,7 @@ int main() {
     // Update texture from surface
     SDL_UpdateTexture(texture, nullptr, tempSurface->pixels, tempSurface->pitch);
     
-    // IMG_SavePNG(tempSurface, "out.png");
+    IMG_SavePNG(tempSurface, "out/out.png"); //make a folder "out" that is untracked in git.
 
     SDL_FreeSurface(tempSurface);
 

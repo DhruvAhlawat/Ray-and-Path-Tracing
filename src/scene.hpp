@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <vector>
 
+using namespace glm; 
+using namespace std;
 using color = glm::vec3;
 
 class Ray;
@@ -21,6 +23,7 @@ class Scene {
 public:
     Camera *camera;
     std::vector<Object*> objects;
+    std::vector<Material> materials;
     std::vector<PointLight> lights;
 };
 
@@ -56,8 +59,14 @@ public:
 class HitRecord {
 public:
     float t;
+    bool hit;
     glm::vec3 p, n;
     Material *mat;
+
+    HitRecord()
+    {
+        hit = false; t = 0; 
+    }
 };
 
 class Object {
@@ -124,5 +133,9 @@ public:
     glm::vec3 location;
     color intensity;
 };
+
+
+HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range = Interval(0, MAXFLOAT));
+
 
 #endif
