@@ -9,6 +9,8 @@ void initializeObjects(Scene &scene)
 {
     Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
     scene.objects.push_back(unitSphere);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), nullptr);
+    scene.objects.push_back(bigSphere);
 }
 
 
@@ -28,6 +30,7 @@ void sendRays(Camera &camera, Scene &scene, HDRImage &image)
                 // c = rec.mat->emission(rec, ray.d);
                 c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
                 // cout << rec.n.x << ", " << rec.n.y << ", " << rec.n.z << endl;
+
 
             }
             else
@@ -58,7 +61,7 @@ int main() {
 
     // Convert HDRImage to a simple RGBA buffer
     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, w, h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
-    tonemap(image, tempSurface, 1, 1);
+    tonemap(image, tempSurface, 2.2, 2.2);
     IMG_SavePNG(tempSurface, "out/out.png"); //make a folder "out" that is untracked in git.
     SDL_FreeSurface(tempSurface);
 
