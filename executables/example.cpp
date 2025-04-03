@@ -24,6 +24,9 @@ void part2(Scene &scene){
     Object *box = new Object(new Box(glm::vec3(1.0,1.0,-2.0), glm::vec3(2.0,2.0,-4.0)), nullptr );
     // Object *plane = new Object(new Plane(glm::vec3(1.0,2.0,1.0), 0.2), nullptr );
     scene.objects.push_back(box);
+    color intensity = color(2, 2, 2); // white light.
+    scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
+    scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
     // scene.objects.push_back(plane);
 }
 
@@ -70,10 +73,10 @@ int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
-    Camera camera(w,h); 
+    Camera camera(w,h, vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0)); 
     scene.camera = &camera;
 
-    part1(scene);
+    part3(scene);
 
     // Ray trace the image
     sendRays(camera, scene, image); 

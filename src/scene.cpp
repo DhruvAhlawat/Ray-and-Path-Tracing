@@ -2,13 +2,15 @@
 
 
 Ray Camera::make_ray(float x, float y) const {
-    // FIXME! //brah what is there to fix?
-    //ok so there is something to fix, the normalizisation of the direction possibly.
-    float image_x = x * aspectRatio; // Adjust X based on aspect ratio
+    float image_x = x * aspectRatio;
     float image_y = y;
-    return Ray(glm::vec3(0,0,0), normalize(glm::vec3(image_x, image_y, -1))); //basically the image is displayed at a location of -z.
+    
+    glm::vec3 ray_dir = glm::normalize(glm::vec3(image_x, image_y, -1));  // Camera space ray
+    ray_dir = glm::vec3(camToWorld * glm::vec4(ray_dir, 0.0f));  // Transform to world space
 
+    return Ray(eye, ray_dir);
 }
+
 
 bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
 {

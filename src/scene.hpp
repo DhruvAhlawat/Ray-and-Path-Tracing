@@ -46,18 +46,31 @@ public:
 };
 
 class Camera {
-public:
-    int w, h;
-    float aspectRatio;
-    Camera (int w, int h)
-    {
-        this->w = w;
-        this->h = h;
-        this->aspectRatio = (float)w / (float)h;
-    }
-    Ray make_ray(float x, float y) const; // screen coordinates in [-1, 1]
-};
-
+    public:
+        int w, h;
+        float aspectRatio;
+        glm::vec3 eye, view, up;
+        glm::mat4 camToWorld;
+    
+        Camera(int w, int h, glm::vec3 eye, glm::vec3 target, glm::vec3 up) 
+            : w(w), h(h), aspectRatio((float)w / (float)h), eye(eye), up(glm::normalize(up)) 
+        {
+            view = glm::normalize(target - eye);  // Compute the forward direction
+            glm::vec3 right = glm::normalize(glm::cross(view, up));  // Right vector
+            glm::vec3 newUp = glm::cross(right, view);  // Recomputed orthogonal up
+    
+            // Construct camera-to-world transformation matrix
+            camToWorld = glm::mat4(
+                glm::vec4(right, 0),
+                glm::vec4(newUp, 0),
+                glm::vec4(-view, 0),
+                glm::vec4(eye, 1)
+            );
+        }
+    
+        Ray make_ray(float x, float y) const;
+    };
+    
 class Interval {
 public:
     float min, max;
