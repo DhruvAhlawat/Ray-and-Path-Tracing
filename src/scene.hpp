@@ -6,6 +6,8 @@
 #include <glm/gtc/matrix_inverse.hpp>
 #include <vector>
 #include<iostream>
+#include <glm/glm.hpp>
+#include <random>
 
 using namespace glm; 
 using namespace std;
@@ -20,12 +22,38 @@ class Material;
 class PointLight;
 class Camera;
 
+
+class RandomGenerator
+{
+    static std::random_device rd; //static so we dont keep creating new random devices yaknow.
+    static std::mt19937 gen; //(rd());
+    static std::uniform_real_distribution<float> uniform; //(0.0f, 1.0f);
+    static std::uniform_real_distribution<float> negpos;
+
+    public:
+    static float randomFloat() {
+        return uniform(gen);
+    }
+    static float randomNegPos() {
+        return negpos(gen);
+    }
+    static vec3 randomVec3() {
+        return vec3(randomNegPos(), randomNegPos(), randomNegPos());
+    }
+    static vec3 randomHemisphere() {
+        return vec3(randomNegPos(), randomNegPos(), randomFloat());
+    }
+
+};
+
 class Scene {
 public:
     Camera *camera;
     std::vector<Object*> objects;
     std::vector<Material> materials;
     std::vector<PointLight> lights;
+
+
     color sky;
     Scene()
     {
@@ -156,12 +184,14 @@ public:
 class Material {
 public:
     color albedo;
-    virtual color emission(const HitRecord &rec, glm::vec3 v) const {
-        return glm::vec3(0.0);
-    }
+    // virtual color emission(const HitRecord &rec, glm::vec3 v) const {
+    //     return glm::vec3(0.0);
+    // }
     virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const = 0;
     virtual bool reflection(const HitRecord &rec, glm::vec3 v,
                             glm::vec3 &r, color &kr) const = 0;
+
+    virtual bool emission() const = 0;
 };
 
 class Lambertian: public Material {
@@ -175,6 +205,10 @@ public:
         return false;
     }
 
+    virtual bool emission() const
+    {
+        return false;
+    }
     Lambertian(color albedo):
         albedo(albedo) {
     }
@@ -191,6 +225,10 @@ public:
         r = reflect(v, rec.n);
         kr = albedo;
         return true;
+    }
+    virtual bool emission() const
+    {
+        return false;
     }
     SpecularMaterial(color albedo):
         albedo(albedo) {
@@ -211,13 +249,40 @@ class Metallic: public Material
         kr = (albedo + (1.0f - albedo) * (float)pow((1 - costheta), 5));
         return true;
     }
+    virtual bool emission() const
+    {
+        return false;
+    }
     Metallic(color albedo):
         albedo(albedo) {
     }
 };
 
-// class Emissive: public Material {
-// };
+class Emissive: public Material 
+{
+    public:
+    color albedo;
+    virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
+    {
+        // float costheta = (glm::dot(v, rec.n)/(glm::length(v) * glm::length(rec.n)));
+        // return albedo * abs(costheta); // purely emissive material. from any direction it emits albedo 
+        return albedo;
+    }
+    virtual bool reflection(const HitRecord &rec, glm::vec3 v,
+                            glm::vec3 &r, color &kr) const
+    {
+        return false;
+    }
+    virtual bool emission() const
+    {
+        return true;
+    }
+
+    Emissive(color albedo)
+    {
+        this->albedo = albedo;
+    }
+};
 
 class PointLight {
 public:
@@ -236,5 +301,6 @@ color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene);
 // color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat);
 color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene);
 color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth);
+color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth, const float continueProb);
 
 #endif

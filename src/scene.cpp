@@ -166,9 +166,9 @@ color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) con
 }
 
 
-color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth)
+color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursion_depth)
 {
-    if(recursionDepth <= 0) return scene.sky; //no computations here.
+    if(recursion_depth <= 0) return scene.sky; //no computations here.
     color result(0.0f), refColor(0.0f);
     float bias = 0.01; // bias to avoid self-shadowing
     vec3 l;
@@ -184,7 +184,7 @@ color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionD
     if(newRec.hit)
     {
         // color incident = rec.mat->brdf(rec, l, ogRay.d) * specularRadiance(ray, newRec, scene, recursionDepth - 1); // get the color from the ray.
-        result = refColor * specularRadiance(ray, newRec, scene, recursionDepth - 1); 
+        result = refColor * specularRadiance(ray, newRec, scene, recursion_depth - 1); 
     }
     else
     {
@@ -244,3 +244,81 @@ color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene)
     return result;
 }
 
+glm::vec3 alignToNormal(const glm::vec3 &sample, const glm::vec3 &normal) {
+    // Step 1: Construct an orthonormal basis (Tangent, Bitangent, Normal)
+    glm::vec3 tangent = glm::normalize(glm::cross(
+        (fabs(normal.x) > 0.1f ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0)), 
+        normal
+    ));
+    glm::vec3 bitangent = glm::cross(normal, tangent);
+
+    // Step 2: Transform the sample from the Z+ hemisphere to the normal's hemisphere
+    return sample.x * tangent + sample.y * bitangent + sample.z * normal;
+}
+
+glm::vec3 sampleHemisphereUniform(vec3 &normal) {
+    
+
+    // float xi1 = dist(gen);
+    // float xi2 = dist(gen);
+    
+    // float theta = 2.0f * M_PI * xi1;
+    // float z = xi2;  // Height
+    // float r = sqrt(1.0f - z * z);
+    // float x = r * cos(theta);
+    // float y = r * sin(theta);
+    vec3 out = RandomGenerator::randomHemisphere();
+    while(glm::dot(out, out) > 1.0f) // keep generating until we get a point in the hemisphere.
+    {
+        out = RandomGenerator::randomHemisphere();
+    }
+    // float x = negpos(gen);
+    // float y = negpos(gen);
+    // float z = uniform(gen); // Height
+    // while(x*x + y*y + z*z > 1.0f) // keep generating until we get a point in the hemisphere.
+    // {
+    //     x = negpos(gen);
+    //     y = negpos(gen);
+    //     z = dist(gen); // Height
+    // }
+    // Normalize the vector to ensure it lies on the unit sphere
+    out = normalize(out);  // Returns a vector in the +Z hemisphere
+    return alignToNormal(out, normal); // Align the sample to the normal direction instead.
+}
+
+color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth, const float continueProb)
+{
+    color result(0.0f);
+    float bias = 0.01; // bias to avoid self-shadowing
+    if(rec.mat->emission())
+    {
+        // cout << "hit a light! with albedo: " << rec.mat->albedo.x << endl;
+        return rec.mat->albedo; //ez. just return the color of the emissive material. 
+    }
+
+    if(recursion_depth >= 3)
+    {
+        //check for end case then. 
+        if(RandomGenerator::randomFloat() > continueProb) return result; // terminate the path with some probability.
+    }
+    vec3 l = sampleHemisphereUniform(rec.n); //this is the direction we want to sample in this instance.
+    // now we sample in this direction, simple as that.
+
+    Ray ray(rec.p + bias * rec.n, l); // first move a little in that direction.
+    HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
+    if(newRec.hit)
+    {
+        color lighting = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb); 
+        // if(lighting.x != 0)
+        // {
+        //     // cout << "illuminated" << endl;
+        // }
+        result = rec.mat->brdf(rec, l, ogRay.d) * lighting;
+    }
+    else
+    {
+        // result += getFixedRadiance(ray, newRec, scene); //gets radiance from the fixed light sources then.
+        //then it stays dark.
+    }
+    return result;
+}
