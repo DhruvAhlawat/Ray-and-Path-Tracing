@@ -66,28 +66,42 @@ color Lambertian::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
     return albedo;
 }
 
+color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
+{
+    color c = albedo;
 
-color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat)
+
+}
+
+// color getFixedRadiance(HitRecord &rec, Scene &scene)
+// {
+//     return getFixedRadiance(rec.p, rec.n, scene, rec.mat);
+// }
+
+color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
 {
     color result(0.0);
     float bias = 0.01; // bias to avoid self-shadowing
     for(auto &light : scene.lights)
     {
 
-        vec3 l = light.location - point;
+        vec3 l = light.location - rec.p;
         float distance = glm::length(l);
         l = normalize(l);
-        HitRecord rec;
-        Ray ray(point, l); //first move a little in that direction.
-        if(!getRayHit(ray, scene, Interval(bias, distance - bias)).hit) // check if the ray hits any object.
+        // HitRecord rec;
+        Ray ray(rec.p, l); //first move a little in that direction.
+
+        HitRecord newRec = getRayHit(ray, scene, Interval(bias, distance - bias));
+        if(!newRec.hit) // check if the ray hits any object.
         {
-            color radiance = light.intensity * glm::max(glm::dot(normal, -l), 0.0f) / (distance * distance); // add the light color to the result.
+            color radiance = light.intensity * glm::max(glm::dot(rec.n, -l), 0.0f) / (distance * distance); // add the light color to the result.
             {  // cout << "light intensity: " << light.intensity.x << " " << light.intensity.y << " " << light.intensity.z << endl;
             // cout << "normal: " << normal.x << " " << normal.y << " " << normal.z << endl;
             // cout << "light direction : " << l.x << " " << l.y << " " << l.z << endl;
             // cout << "ray hit, : color = " << radiance.x << " " << radiance.y << " " << radiance.z << endl;
             }
-            result += mat->brdf(rec, l, -ray.d) * radiance; // multiply the light color with the material color.
+            result += rec.mat->brdf(rec, l, -ogRay.d) * radiance; // multiply the light color with the material color.
+            // result += radiance;
         }
     }
     return result;

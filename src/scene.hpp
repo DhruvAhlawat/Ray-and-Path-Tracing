@@ -138,8 +138,24 @@ public:
 
 };
 
-// class Metallic: public Material {
-// };
+class Metallic: public Material 
+{
+    public:
+    color albedo;
+    float fuzz;
+    virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
+    virtual bool reflection(const HitRecord &rec, glm::vec3 v,
+                            glm::vec3 &r, color &kr) const
+    {
+        r = reflect(v, rec.n);
+        kr = albedo;
+        return true;
+    }
+    Metallic(color albedo, float fuzz):
+        albedo(albedo),
+        fuzz(fuzz) {
+    }
+};
 
 // class Emissive: public Material {
 // };
@@ -158,7 +174,8 @@ public:
 
 HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range = Interval(0, MAXFLOAT));
 color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene);
-color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat);
+// color getFixedRadiance(vec3 point, vec3 normal,  Scene &scene, Material *mat);
+color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene);
 
 
 #endif
