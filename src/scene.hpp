@@ -8,6 +8,7 @@
 #include<iostream>
 #include <glm/glm.hpp>
 #include <random>
+#include <glm/gtc/random.hpp>
 
 using namespace glm; 
 using namespace std;
@@ -262,22 +263,53 @@ class Metallic: public Material
 {
     public:
     color albedo;
+    float roughness;
+
     virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
-    virtual bool reflection(const HitRecord &rec, glm::vec3 v,
-                            glm::vec3 &r, color &kr) const
-    {
-        r = reflect(v, rec.n);
-        float costheta = (glm::dot(v, rec.n)/(glm::length(v) * glm::length(rec.n)));
-        kr = (albedo + (1.0f - albedo) * (float)pow((1 - costheta), 5));
+    virtual bool reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, color &kr) const override {
+        glm::vec3 perfectReflection = glm::reflect(-v, rec.n); // Ideal mirror reflection
+
+        if (roughness > 0.0f) {
+            // Sample random direction around perfect reflection
+            perfectReflection = sampleBlinnPhong(perfectReflection, roughness);
+        }
+
+        r = glm::normalize(perfectReflection);
+
+        // Fresnel-Schlick approximation
+        float cosTheta = glm::max(glm::dot(glm::normalize(v), glm::normalize(rec.n)), 0.0f);
+        color F0 = albedo; // Metals use their color as base reflectance
+        kr = F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
+
         return true;
     }
+
     virtual bool emission() const
     {
         return false;
     }
-    Metallic(color albedo):
-        albedo(albedo) {
+    
+    Metallic(color albedo, float roughness=0.0f):
+        albedo(albedo),
+        roughness(roughness) {
     }
+private:
+    glm::vec3 sampleBlinnPhong(glm::vec3 perfectReflection, float roughness) const {
+        // Sample a random vector around the perfect reflection using a Blinn-Phong distribution
+        float alpha = 2.0f / (roughness * roughness) - 2.0f;
+        float phi = glm::linearRand(0.0f, 2.0f * static_cast<float>(M_PI));
+        float cosTheta = pow(glm::linearRand(0.0f, 1.0f), 1.0f / (alpha + 1.0f));
+        float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
+
+        // Convert spherical coordinates to cartesian
+        glm::vec3 sample(
+            sinTheta * cos(phi),
+            sinTheta * sin(phi),
+            cosTheta
+        );
+
+        return glm::normalize(perfectReflection + roughness * sample);
+}
 };
 
 class Emissive: public Material 
