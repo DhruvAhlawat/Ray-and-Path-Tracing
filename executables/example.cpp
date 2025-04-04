@@ -82,7 +82,7 @@ void pathtrace_scene(Scene &scene)
     
     Material *mirror = new SpecularMaterial(color(0.9, 0.9, 0.9));
     
-    Material *emissive_white = new Emissive(color(0.9, 0.9, 0.9));
+    Material *emissive_white = new Emissive(color(3));
 
     emissive_white->albedo = color(0.9,0.9,0.9);
     cout << "light color is " << emissive_white->albedo.x << endl;
@@ -94,7 +94,7 @@ void pathtrace_scene(Scene &scene)
     // Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), metallic_red);
     // scene.objects.push_back(sphere2);
 
-    Object *ground = new Object(new SquarePlane(vec3(0,-1,-2), vec3(0,1,0), 8), diffuse_yellow);
+    Object *ground = new Object(new SquarePlane(vec3(0,-1,-2), vec3(0,1,0), 3), diffuse_yellow);
     scene.objects.push_back(ground);
 
     // Object *box = new Object(new Box(vec3(0, 0, -2), vec3(0, 0.4, -2)), diffuse_blue);
@@ -140,10 +140,10 @@ void sendRays(Camera &camera, Scene &scene, HDRImage &image)
         }
     }
 }
-color trace_paths(Ray &ray, Scene &scene, int num_samples)
+inline color trace_paths(Ray &ray, Scene &scene, int num_samples)
 {
     color acc = color(0.0);
-    int recursion_depth = 10;
+    int recursion_depth = 4;
     float continue_prob = 1 - (1.0f / (float)recursion_depth);
     for(int k = 0; k < num_samples; k++)
     {
@@ -162,7 +162,7 @@ color trace_paths(Ray &ray, Scene &scene, int num_samples)
             // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
         }
     }
-    if(acc != color(0.0f))
+    // if(acc != color(0.0f))
     // cout << "color: " << acc.x << " " << acc.y << " " << acc.z << endl;
     return acc;
 }
@@ -181,6 +181,55 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
     }
 }
 
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery = 20)
+{
+    // Ray trace the image
+    int num_samples = 100;
+    for(int sample = 0; sample < num_samples; sample++)
+    {
+        for (int j = 0; j < image.h; j++) 
+        {   
+            for (int i = 0; i < image.w; i++) {
+                float x = 2 * (i + 0.5f) / image.w - 1;
+                float y = 1 - 2 * (j + 0.5f) / image.h;
+                Ray ray = scene.camera->make_ray(x, y);
+                image.pixel(i, j) += trace_paths(ray, scene, 1); // get the color from the ray.
+                // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+            }
+        }
+        if((sample + 1) % saveEvery == 0)
+        {
+            for (int j = 0; j < image.h; j++) 
+            {   
+                for (int i = 0; i < image.w; i++) {
+                    // float x = 2 * (i + 0.5f) / image.w - 1;
+                    // float y = 1 - 2 * (j + 0.5f) / image.h;
+                    // Ray ray = scene.camera->make_ray(x, y);
+                    image.pixel(i, j) /= (sample + 1); // get the color from the ray.
+                    // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+                }
+            }
+            SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, image.w, image.h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+            tonemap(image, tempSurface, 1, 2.2);
+            string savepath = saveFolder + "/outavg_" + to_string(sample + 1) + ".png";
+            IMG_SavePNG(tempSurface, savepath.c_str()); //make a folder "out" that is untracked in git.
+            SDL_FreeSurface(tempSurface);
+
+            for (int j = 0; j < image.h; j++) 
+            {   
+                for (int i = 0; i < image.w; i++) {
+                    // float x = 2 * (i + 0.5f) / image.w - 1;
+                    // float y = 1 - 2 * (j + 0.5f) / image.h;
+                    // Ray ray = scene.camera->make_ray(x, y);
+                    image.pixel(i, j) *= (sample + 1); // get the color from the ray. //to get back to the sum.
+                    // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+                }
+            }
+
+        }
+    }
+}
+
 int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
@@ -188,15 +237,17 @@ int main() {
     Camera camera(w,h, vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0)); 
     scene.camera = &camera;
 
-    pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
-    // Ray trace the image
-    // sendRays(camera, scene, image); 
-    run_pathTrace(camera, scene, image); 
-    
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL init failed: " << SDL_GetError() << std::endl;
         return 1;
     }
+
+    pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
+    // Ray trace the image
+    // sendRays(camera, scene, image); 
+    // run_pathTrace(camera, scene, image); 
+    run_pathTrace_iterative(camera, scene, image, "out/iterative", 20); // make a folder out/iterative (untracked).
+    
 
     // Convert HDRImage to a simple RGBA buffer
     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, w, h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);

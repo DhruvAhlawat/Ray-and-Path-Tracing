@@ -156,7 +156,7 @@ public:
     glm::vec3 center;
     float radius;
 
-    Sphere(glm::vec3 center, float radius, glm::mat4 transform)
+    Sphere(glm::vec3 center, float radius, glm::mat4 transform = glm::mat4(1.0f))
         : Shape(transform), center(center), radius(radius) {}
 
     virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const override;
@@ -193,7 +193,7 @@ public:
     glm::vec3 u, v; // Basis vectors
     float s;       // Half-length of the square
 
-    SquarePlane(glm::vec3 center, glm::vec3 normal, float size, mat4 transform)
+    SquarePlane(glm::vec3 center, glm::vec3 normal, float size, mat4 transform = mat4(1.0f))
         : center(center), n(glm::normalize(normal)), s(size), Shape(transform)
     {
         // Create two perpendicular basis vectors (u, v) for the plane
