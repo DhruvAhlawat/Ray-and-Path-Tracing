@@ -1,5 +1,5 @@
 #include "scene.hpp"
-
+#include "../src/image.hpp"
 
 Ray Camera::make_ray(float x, float y) const {
     float image_x = x * aspectRatio;
@@ -23,7 +23,7 @@ bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
     Ray localRay(new_origin, new_direction);
 
     bool hit = shape->hit(localRay, t_range, rec);
-    
+
     if(!hit) return false;
     // otherwise also set the material.    
     rec.mat = this->mat;
@@ -198,7 +198,7 @@ color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursion_
     }
     //otherwise we needa do some reflection, so cast a new ray.
 
-    Ray ray(rec.p + bias * rec.n, l); // first move a little in that direction.
+    Ray ray(rec.p + bias * l, l); // first move a little in that direction.
     HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
     if(newRec.hit)
     {
@@ -340,4 +340,127 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
         //then it stays dark.
     }
     return result;
+}
+
+// new
+
+color singleBouncePixelColor(Ray &ray, Scene &scene)
+{
+    color c = scene.sky; //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+    HitRecord rec = getRayHit(ray, scene);
+    if (rec.hit) 
+    {
+        // cout << "hit at: " << rec.p.x << " " << rec.p.y << " " << rec.p.z << endl;
+        // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
+        // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
+        // c = getFixedRadiance(ray, rec, scene);
+        c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
+        // c = radiance;
+        // Now, we can get the color from the material.
+        // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
+    }
+    return c;
+}
+
+void sendRays(Camera &camera, Scene &scene, HDRImage &image)
+{
+    // Ray trace the image
+    for (int j = 0; j < image.h; j++) {   
+        for (int i = 0; i < image.w; i++) {
+            float x = 2 * (i + 0.5f) / image.w - 1;
+            float y = 1 - 2 * (j + 0.5f) / image.h;
+            Ray ray = scene.camera->make_ray(x, y);
+            image.pixel(i, j) = singleBouncePixelColor(ray, scene); // get the color from the ray.
+        }
+    }
+}
+
+inline color trace_paths(Ray &ray, Scene &scene, int num_samples)
+{
+    color acc = color(0.0);
+    int recursion_depth = 4;
+    float continue_prob = 1 - (1.0f / (float)recursion_depth);
+    for(int k = 0; k < num_samples; k++)
+    {
+        // color c = scene.sky; //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
+        HitRecord rec = getRayHit(ray, scene);
+        if (rec.hit) 
+        {
+            // cout << "hit at: " << rec.p.x << " " << rec.p.y << " " << rec.p.z << endl;
+            // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
+            // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
+            // c = getFixedRadiance(ray, rec, scene);
+            // c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
+            acc += PathTracing(ray, rec,  scene, 0, continue_prob); // get the color from the ray.
+            // c = radiance;
+            // Now, we can get the color from the material.
+            // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
+        }
+    }
+    // if(acc != color(0.0f))
+    // cout << "color: " << acc.x << " " << acc.y << " " << acc.z << endl;
+    return acc;
+}
+void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
+{
+    // Ray trace the image
+    int num_samples = 100;
+    for (int j = 0; j < image.h; j++) {   
+        for (int i = 0; i < image.w; i++) {
+            float x = 2 * (i + 0.5f) / image.w - 1;
+            float y = 1 - 2 * (j + 0.5f) / image.h;
+            Ray ray = scene.camera->make_ray(x, y);
+            image.pixel(i, j) = trace_paths(ray, scene, num_samples); // get the color from the ray.
+            // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+        }
+    }
+}
+
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery = 20)
+{
+    // Ray trace the image
+    int num_samples = 100;
+    for(int sample = 0; sample < num_samples; sample++)
+    {
+        for (int j = 0; j < image.h; j++) 
+        {   
+            for (int i = 0; i < image.w; i++) {
+                float x = 2 * (i + 0.5f) / image.w - 1;
+                float y = 1 - 2 * (j + 0.5f) / image.h;
+                Ray ray = scene.camera->make_ray(x, y);
+                image.pixel(i, j) += trace_paths(ray, scene, 1); // get the color from the ray.
+                // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+            }
+        }
+        if((sample + 1) % saveEvery == 0)
+        {
+            for (int j = 0; j < image.h; j++) 
+            {   
+                for (int i = 0; i < image.w; i++) {
+                    // float x = 2 * (i + 0.5f) / image.w - 1;
+                    // float y = 1 - 2 * (j + 0.5f) / image.h;
+                    // Ray ray = scene.camera->make_ray(x, y);
+                    image.pixel(i, j) /= (sample + 1); // get the color from the ray.
+                    // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+                }
+            }
+            SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, image.w, image.h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+            tonemap(image, tempSurface, 1, 2.2);
+            string savepath = saveFolder + "/outavg_" + to_string(sample + 1) + ".png";
+            IMG_SavePNG(tempSurface, savepath.c_str()); //make a folder "out" that is untracked in git.
+            SDL_FreeSurface(tempSurface);
+
+            for (int j = 0; j < image.h; j++) 
+            {   
+                for (int i = 0; i < image.w; i++) {
+                    // float x = 2 * (i + 0.5f) / image.w - 1;
+                    // float y = 1 - 2 * (j + 0.5f) / image.h;
+                    // Ray ray = scene.camera->make_ray(x, y);
+                    image.pixel(i, j) *= (sample + 1); // get the color from the ray. //to get back to the sum.
+                    // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+                }
+            }
+
+        }
+    }
 }

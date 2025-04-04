@@ -10,6 +10,8 @@
 #include <random>
 #include <glm/gtc/random.hpp>
 
+#include "../src/image.hpp"
+
 using namespace glm; 
 using namespace std;
 using color = glm::vec3;
@@ -194,7 +196,7 @@ public:
     glm::vec3 u, v; // Basis vectors
     float s;       // Half-length of the square
 
-    SquarePlane(glm::vec3 center, glm::vec3 normal, float size, mat4 transform = mat4(1.0f))
+    SquarePlane(glm::vec3 center, glm::vec3 normal, float size)
         : center(center), n(glm::normalize(normal)), s(size)
     {
         // Create two perpendicular basis vectors (u, v) for the plane
@@ -288,11 +290,12 @@ class Metallic: public Material
     {
         return false;
     }
-    
+
     Metallic(color albedo, float roughness=0.0f):
         albedo(albedo),
         roughness(roughness) {
     }
+
 private:
     glm::vec3 sampleBlinnPhong(glm::vec3 perfectReflection, float roughness) const {
         // Sample a random vector around the perfect reflection using a Blinn-Phong distribution
@@ -356,5 +359,11 @@ color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene);
 color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene);
 color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth);
 color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth, const float continueProb);
+
+color singleBouncePixelColor(Ray &ray, Scene &scene);
+void sendRays(Camera &camera, Scene &scene, HDRImage &image);
+inline color trace_paths(Ray &ray, Scene &scene, int num_samples);
+void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image);
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery);
 
 #endif
