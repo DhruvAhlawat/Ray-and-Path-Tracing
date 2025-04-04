@@ -16,24 +16,32 @@ bool Object::hit(Ray ray, Interval t_range, HitRecord &rec) const
 {
     // std::cout << "Object::hit" << std::endl;
     // Check if the ray hits the shape of the object.
-    bool hit = shape->hit(ray, t_range, rec);
-    if(!hit) return false;
-    // otherwise also set the material.
-    rec.mat = this->mat;
-    rec.hit = true;
-    return true;
-}
 
-bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const {
     // Transform the ray into object space
     glm::vec3 new_origin = glm::vec3(worldToModel * glm::vec4(ray.o, 1.0));
     glm::vec3 new_direction = glm::normalize(glm::vec3(worldToModel * glm::vec4(ray.d, 0.0)));
     Ray localRay(new_origin, new_direction);
 
+    bool hit = shape->hit(localRay, t_range, rec);
+    
+    if(!hit) return false;
+    // otherwise also set the material.    
+    rec.mat = this->mat;
+    rec.hit = true;
+
+
+    rec.p = glm::vec3(modelToWorld * vec4(rec.p, 1.0));
+    rec.n = glm::normalize(glm::vec3(normalTransform * glm::vec4(rec.n, 0.0)));
+
+    return true;
+}
+
+bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const {
+
     // Compute sphere intersection in object space
-    glm::vec3 oc = localRay.o - center;
-    float a = glm::dot(localRay.d, localRay.d);
-    float b = 2.0f * glm::dot(oc, localRay.d);
+    glm::vec3 oc = ray.o - center;
+    float a = glm::dot(ray.d, ray.d);
+    float b = 2.0f * glm::dot(oc, ray.d);
     float c_val = glm::dot(oc, oc) - radius * radius;
     float D = b * b - 4 * a * c_val;
 
@@ -48,19 +56,17 @@ bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const {
         }
     }
 
-    // Convert intersection point back to world space
     rec.t = t;
-    rec.p = glm::vec3(modelToWorld * glm::vec4(localRay.o + t * localRay.d, 1.0));
+    rec.p = ray.o + t * ray.d;
     
-    // Transform the normal using normalTransform
-    glm::vec3 localNormal = glm::normalize(localRay.o + t * localRay.d - center);
-    rec.n = glm::normalize(glm::vec3(normalTransform * glm::vec4(localNormal, 0.0)));
+    glm::vec3 localNormal = glm::normalize(ray.o + t * ray.d - center);
+    rec.n = localNormal;
 
     return true;
 }
 
 
-bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {    // without transform
+bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {
     float t_min = t_range.min;
     float t_max = t_range.max;
     int hit_axis = -1;
@@ -100,43 +106,33 @@ bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {    // without t
 }
 
 bool Plane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
-    // Transform ray into object space
-    glm::vec3 new_origin = glm::vec3(worldToModel * glm::vec4(ray.o, 1.0));
-    glm::vec3 new_direction = glm::normalize(glm::vec3(worldToModel * glm::vec4(ray.d, 0.0)));
-    Ray localRay(new_origin, new_direction);
 
     // Plane equation: (P • N) + d = 0
-    float denom = glm::dot(normal, localRay.d);
+    float denom = glm::dot(normal, ray.d);
     if (fabs(denom) < 1e-6) return false; // Parallel ray
 
-    float t = -(glm::dot(normal, localRay.o) + d) / denom;
+    float t = -(glm::dot(normal, ray.o) + d) / denom;
     if (t < t_range.min || t > t_range.max) return false;
 
-    // Convert intersection point back to world space
     rec.t = t;
-    rec.p = glm::vec3(modelToWorld * glm::vec4(localRay.o + t * localRay.d, 1.0));
+    rec.p = ray.o + t * ray.d;
 
-    // Transform normal using inverse transpose
-    rec.n = glm::normalize(glm::vec3(normalTransform * glm::vec4(normal, 0.0)));
+    rec.n = normal;
 
     return true;
 }
 
 bool SquarePlane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
-    // Transform ray to object space
-    glm::vec3 new_origin = glm::vec3(worldToModel * glm::vec4(ray.o, 1.0));
-    glm::vec3 new_direction = glm::normalize(glm::vec3(worldToModel * glm::vec4(ray.d, 0.0)));
-    Ray localRay(new_origin, new_direction);
 
     // Ray-plane intersection
-    float denom = glm::dot(n, localRay.d);
+    float denom = glm::dot(n, ray.d);
     if (fabs(denom) < 1e-6) return false;  // Ray is parallel
 
-    float t = glm::dot(center - localRay.o, n) / denom;
+    float t = glm::dot(center - ray.o, n) / denom;
     if (t < t_range.min || t > t_range.max) return false;
 
     // Compute intersection point
-    glm::vec3 p = localRay.o + t * localRay.d;
+    glm::vec3 p = ray.o + t * ray.d;
     
     // Convert to local plane coordinates
     glm::vec3 d = p - center;
@@ -146,12 +142,10 @@ bool SquarePlane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
     // Check if within square bounds
     if (fabs(u_proj) > s || fabs(v_proj) > s) return false;
 
-    // Convert intersection point back to world space
     rec.t = t;
-    rec.p = glm::vec3(modelToWorld * glm::vec4(p, 1.0));
+    rec.p = p;
 
-    // Transform normal using inverse transpose
-    rec.n = glm::normalize(glm::vec3(normalTransform * glm::vec4(n, 0.0)));
+    rec.n = n;
 
     return true;
 }

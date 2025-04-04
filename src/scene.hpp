@@ -129,24 +129,24 @@ class Object {
 public:
     Shape *shape;
     Material *mat;
-    Object(Shape *shape, Material *mat, glm::mat4 M=glm::mat4(1.0)):
-        shape(shape),
-        mat(mat) {
-    }
-    bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
-};
 
-class Shape {
-public:
     glm::mat4 modelToWorld;
     glm::mat4 worldToModel;
     glm::mat4 normalTransform;
 
-    Shape(glm::mat4 transform) : modelToWorld(transform) {
-        worldToModel = glm::inverse(transform);
+    Object(Shape *shape, Material *mat, glm::mat4 model_to_world = glm::mat4(1.0f)) 
+        : shape(shape), mat(mat), modelToWorld(model_to_world) 
+    {
+        worldToModel = glm::inverse(modelToWorld);
         normalTransform = glm::transpose(worldToModel);
     }
 
+    bool hit(Ray ray, Interval t_range, HitRecord& rec) const;
+};
+
+
+class Shape {
+public:
     virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const = 0;
 };
     
@@ -156,8 +156,8 @@ public:
     glm::vec3 center;
     float radius;
 
-    Sphere(glm::vec3 center, float radius, glm::mat4 transform = glm::mat4(1.0f))
-        : Shape(transform), center(center), radius(radius) {}
+    Sphere(glm::vec3 center, float radius)
+        : center(center), radius(radius) {}
 
     virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const override;
 };
@@ -169,7 +169,7 @@ class Plane: public Shape {
         float d;           // signed distance from origin
     
         Plane(glm::vec3 normal, float d, glm::mat4 transform):
-            Shape(transform), normal(glm::normalize(normal)), d(d) {} 
+            normal(glm::normalize(normal)), d(d) {} 
         
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
     };
@@ -181,7 +181,7 @@ class Box: public Shape {
         glm::vec3 max_corner;
     
         Box(glm::vec3 min_corner, glm::vec3 max_corner, glm::mat4 transform)
-            : Shape(transform), min_corner(min_corner), max_corner(max_corner) {}
+            :min_corner(min_corner), max_corner(max_corner) {}
     
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
     };
@@ -194,7 +194,7 @@ public:
     float s;       // Half-length of the square
 
     SquarePlane(glm::vec3 center, glm::vec3 normal, float size, mat4 transform = mat4(1.0f))
-        : center(center), n(glm::normalize(normal)), s(size), Shape(transform)
+        : center(center), n(glm::normalize(normal)), s(size)
     {
         // Create two perpendicular basis vectors (u, v) for the plane
         glm::vec3 temp = (fabs(n.x) > 0.9f) ? glm::vec3(0, 1, 0) : glm::vec3(1, 0, 0);
