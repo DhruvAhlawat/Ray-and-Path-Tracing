@@ -93,8 +93,8 @@ void pathtrace_scene(Scene &scene)
     scene.objects.push_back(unitSphere);
 
     // create a box
-    Object *box = new Object(new Box(glm::vec3(-1.0, 0.0, -2.0), glm::vec3(0.0, 1.0, -1.0)), diffuse_red);
-    scene.objects.push_back(box);
+    // Object *box = new Object(new Box(glm::vec3(-1.0, 0.0, -2.0), glm::vec3(0.0, 1.0, -1.0)), diffuse_red);
+    // scene.objects.push_back(box);
     
     // Object *another = new Object(new Sphere(glm::vec3(1, 0, -3), 0.6), metallic_red);
     // scene.objects.push_back(another);
@@ -133,7 +133,7 @@ int main() {
     // part3(scene);
     pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
     // Ray trace the image
-    sendRays(camera, scene, image); 
+    // sendRays(camera, scene, image); 
     // run_pathTrace(camera, scene, image); 
     // run_pathTrace_iterative(camera, scene, image, "out/iterative", 20); // make a folder out/iterative (untracked).
     
@@ -143,8 +143,6 @@ int main() {
     tonemap(image, tempSurface, 1, 2.2);
     IMG_SavePNG(tempSurface, "out/out.png"); //make a folder "out" that is untracked in git.
     SDL_FreeSurface(tempSurface);
-
-
 
     // SDL_Window* window = SDL_CreateWindow("Image Display", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, w, h, SDL_WINDOW_SHOWN);
     // SDL_Renderer* renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
