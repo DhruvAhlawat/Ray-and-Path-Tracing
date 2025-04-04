@@ -168,7 +168,7 @@ class Plane: public Shape {
         glm::vec3 normal;  // plane normal
         float d;           // signed distance from origin
     
-        Plane(glm::vec3 normal, float d, glm::mat4 transform):
+        Plane(glm::vec3 normal, float d):
             normal(glm::normalize(normal)), d(d) {} 
         
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
@@ -180,7 +180,7 @@ class Box: public Shape {
         glm::vec3 min_corner;
         glm::vec3 max_corner;
     
-        Box(glm::vec3 min_corner, glm::vec3 max_corner, glm::mat4 transform)
+        Box(glm::vec3 min_corner, glm::vec3 max_corner)
             :min_corner(min_corner), max_corner(max_corner) {}
     
         virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;

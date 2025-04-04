@@ -14,11 +14,11 @@
 void demo_part1(Scene &scene)
 {
     mat4 transform = mat4(1.0f);
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f, transform), nullptr);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
     scene.objects.push_back(unitSphere);
 
 
-    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f, transform), nullptr);
+    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), nullptr);
     scene.objects.push_back(sphere2);
 }
 
@@ -45,12 +45,12 @@ void specular_scene(Scene &scene)
     transform = translate(transform, vec3(0, 0, -2));
     transform = rotate(transform, 1.5f, vec3(0, 1, 0));
     
-    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 6, transform), diffuse_yellow);
+    Object *ground = new Object(new SquarePlane(vec3(0,-1,0), vec3(0,1,0), 6), diffuse_yellow);
     scene.objects.push_back(ground);
     
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f, transform), diffuse_yellow );
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), diffuse_yellow );
     scene.objects.push_back(unitSphere);
-    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f, transform), diffuse_grey);
+    Object *bigSphere = new Object(new Sphere(vec3(0, -101, -2), 100.0f), diffuse_grey);
     scene.objects.push_back(bigSphere);
 }
 
@@ -244,9 +244,9 @@ int main() {
 
     pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
     // Ray trace the image
-    // sendRays(camera, scene, image); 
+    sendRays(camera, scene, image); 
     // run_pathTrace(camera, scene, image); 
-    run_pathTrace_iterative(camera, scene, image, "out/iterative", 20); // make a folder out/iterative (untracked).
+    // run_pathTrace_iterative(camera, scene, image, "out/iterative", 20); // make a folder out/iterative (untracked).
     
 
     // Convert HDRImage to a simple RGBA buffer
