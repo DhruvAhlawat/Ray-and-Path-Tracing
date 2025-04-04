@@ -14,11 +14,11 @@
 void demo_part1(Scene &scene)
 {
     mat4 transform = mat4(1.0f);
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 0.5f), nullptr);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 1.0f), nullptr);
     scene.objects.push_back(unitSphere);
 
 
-    Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), nullptr);
+    Object *sphere2 = new Object(new Sphere(glm::vec3(0.0f, -101.0f, -2), 100.0f), nullptr);
     scene.objects.push_back(sphere2);
 }
 
@@ -26,6 +26,7 @@ void demo_part1(Scene &scene)
 void specular_scene(Scene &scene)
 {
     color intensity = color(2, 2, 2); // white light.
+    
     scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
     scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 
@@ -67,9 +68,8 @@ void part2(Scene &scene){
 void pathtrace_scene(Scene &scene)
 {
     color intensity = color(2, 2, 2); // white light.
-    scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
-    scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
-
+    scene.lights.emplace_back(vec3(1,1,0), intensity); // white point light.
+    scene.lights.emplace_back(vec3(0,1,0), intensity); // white point light.
     
     Material *diffuse_red = new Lambertian(color(0.7, 0.1, 0.1));
     Material *diffuse_yellow = new Lambertian(color(0.8, 0.8, 0.1));
@@ -89,11 +89,15 @@ void pathtrace_scene(Scene &scene)
     // Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), new Lambertian(color(0.9,0.9,0.9)));
     // scene.objects.push_back(lightPlane);
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(-1, 0, -3), 0.6), metallic_red);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), metallic_red);
     scene.objects.push_back(unitSphere);
+
+    // create a box
+    Object *box = new Object(new Box(glm::vec3(-1.0, 0.0, -2.0), glm::vec3(0.0, 1.0, -1.0)), diffuse_red);
+    scene.objects.push_back(box);
     
-    Object *another = new Object(new Sphere(glm::vec3(1, 0, -3), 0.6), metallic_red);
-    scene.objects.push_back(another);
+    // Object *another = new Object(new Sphere(glm::vec3(1, 0, -3), 0.6), metallic_red);
+    // scene.objects.push_back(another);
     // Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), metallic_red);
     // scene.objects.push_back(sphere2);
 
@@ -107,8 +111,10 @@ void pathtrace_scene(Scene &scene)
 void part3(Scene &scene)
 {
     demo_part1(scene); //sets up sphere objects.
+    scene.objects[0]->mat = new Lambertian(color(0.7, 0.1, 0.1));
+    scene.objects[1]->mat = new Lambertian(color(0.8, 0.8, 0.1));
     color intensity = color(2, 2, 2); // white light.
-    scene.lights.emplace_back(vec3(1,1,-1), intensity); // white point light.
+    scene.lights.emplace_back(vec3(1,1,1), intensity); // white point light.
     scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
 }
 
@@ -124,7 +130,7 @@ int main() {
         std::cerr << "SDL init failed: " << SDL_GetError() << std::endl;
         return 1;
     }
-
+    // part3(scene);
     pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
     // Ray trace the image
     sendRays(camera, scene, image); 

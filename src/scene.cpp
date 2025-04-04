@@ -67,43 +67,39 @@ bool Sphere::hit(Ray ray, Interval t_range, HitRecord &rec) const {
 
 
 bool Box::hit(Ray ray, Interval t_range, HitRecord &rec) const {
-    float t_min = t_range.min;
-    float t_max = t_range.max;
+    float t_min = t_range.min, t_max = t_range.max;
+    glm::vec3 invD = 1.0f / ray.d;  // Precompute inverse direction
     int hit_axis = -1;
 
     for (int i = 0; i < 3; i++) {
-        if (ray.d[i] == 0.0f) {  // ray parallel to axis
-            if (ray.o[i] < min_corner[i] || ray.o[i] > max_corner[i]) {
-                return false;
-            }
-            continue;   
-        }
+        float t0 = (min_corner[i] - ray.o[i]) * invD[i];
+        float t1 = (max_corner[i] - ray.o[i]) * invD[i];
 
-        float invD = 1.0f / ray.d[i];
-        float t0 = (min_corner[i] - ray.o[i]) * invD;
-        float t1 = (max_corner[i] - ray.o[i]) * invD;
-
-        if (invD < 0) std::swap(t0, t1);
+        if (invD[i] < 0.0f) std::swap(t0, t1);  // Ensure t0 < t1
 
         if (t0 > t_min) {
             t_min = t0;
             hit_axis = i;
         }
         t_max = std::min(t_max, t1);
-        if (t_max <= t_min) return false;
+
+        if (t_max <= t_min) return false;  // No intersection
     }
+
+    if (t_min < t_range.min || t_min > t_range.max) return false; // Valid range check
 
     rec.t = t_min;
     rec.p = ray.o + t_min * ray.d;
 
+    // Compute normal
     glm::vec3 normal(0.0f);
-    if (hit_axis != -1) {
-        normal[hit_axis] = (rec.p[hit_axis] == min_corner[hit_axis]) ? -1.0f : 1.0f;
-    }
+    if (hit_axis != -1) normal[hit_axis] = (rec.p[hit_axis] == min_corner[hit_axis]) ? -1.0f : 1.0f;
     rec.n = normal;
 
     return true;
 }
+
+
 
 bool Plane::hit(Ray ray, Interval t_range, HitRecord &rec) const {
 
@@ -192,7 +188,7 @@ color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursion_
     float bias = 0.01; // bias to avoid self-shadowing
     vec3 l;
     bool reflection = rec.mat->reflection(rec, ogRay.d, l, refColor); // reflect the ray direction.
-    if(!reflection) 
+    if(!reflection)
     {
         return getFixedRadiance(ogRay, rec, scene); //if no reflection on this material, then just return radiance from the fixed light sources. FOR NOW. TO CHANGE LATER.
     }
@@ -353,8 +349,8 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
         // cout << "hit at: " << rec.p.x << " " << rec.p.y << " " << rec.p.z << endl;
         // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
         // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
-        // c = getFixedRadiance(ray, rec, scene);
-        c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
+        c = getFixedRadiance(ray, rec, scene);
+        // c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
         // c = radiance;
         // Now, we can get the color from the material.
         // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));

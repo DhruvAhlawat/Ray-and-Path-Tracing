@@ -179,15 +179,15 @@ class Plane: public Shape {
     
 
 class Box: public Shape {
-    public:
-        glm::vec3 min_corner;
-        glm::vec3 max_corner;
-    
-        Box(glm::vec3 min_corner, glm::vec3 max_corner)
-            :min_corner(min_corner), max_corner(max_corner) {}
-    
-        virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const;
-    };
+public:
+    glm::vec3 min_corner;
+    glm::vec3 max_corner;
+
+    Box(glm::vec3 min_corner, glm::vec3 max_corner)
+        :min_corner(min_corner), max_corner(max_corner) {}
+
+    virtual bool hit(Ray ray, Interval t_range, HitRecord &rec) const override;
+};
 
 class SquarePlane : public Shape {
 public:
