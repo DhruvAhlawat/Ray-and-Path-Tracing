@@ -68,8 +68,8 @@ void part2(Scene &scene){
 void pathtrace_scene(Scene &scene)
 {
     color intensity = color(2, 2, 2); // white light.
-    scene.lights.emplace_back(vec3(1,1,0), intensity); // white point light.
-    scene.lights.emplace_back(vec3(0,1,0), intensity); // white point light.
+    scene.lights.emplace_back(vec3(-1,1,0), intensity); // white point light.
+    scene.lights.emplace_back(vec3(1,-0.5,-2), intensity); // white point light.
     
     Material *diffuse_red = new Lambertian(color(0.7, 0.1, 0.1));
     Material *diffuse_yellow = new Lambertian(color(0.8, 0.8, 0.1));
@@ -86,10 +86,10 @@ void pathtrace_scene(Scene &scene)
 
     emissive_white->albedo = color(0.9,0.9,0.9);
     cout << "light color is " << emissive_white->albedo.x << endl;
-    Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), emissive_white);
-    scene.objects.push_back(lightPlane);
+    // Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), emissive_white);
+    // scene.objects.push_back(lightPlane);
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), metallic_red);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), diffuse_red);
     scene.objects.push_back(unitSphere);
 
     // create a box
@@ -133,15 +133,15 @@ int main() {
     // part3(scene);
     pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
     // Ray trace the image
-    // sendRays(camera, scene, image);
-    run_pathTrace(camera, scene, image); 
+    sendRays(camera, scene, image);
+    // run_pathTrace(camera, scene, image); 
     // run_pathTrace_iterative(camera, scene, image, "out/iterative", 20); // make a folder out/iterative (untracked).
     
 
     // Convert HDRImage to a simple RGBA buffer
     SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, w, h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
     tonemap(image, tempSurface, 1, 2.2);
-    IMG_SavePNG(tempSurface, "out/out.png"); //make a folder "out" that is untracked in git.
+    IMG_SavePNG(tempSurface, "out/out1.png"); //make a folder "out" that is untracked in git.
     SDL_FreeSurface(tempSurface);
 
 

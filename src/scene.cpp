@@ -164,13 +164,19 @@ color Lambertian::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
     return albedo;
 }
 
-color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
-{
-    color center = albedo;
-    vec3 radius = reflect(v, rec.n);
-    return center * glm::max(glm::dot(radius, l), 0.0f); // specular reflection.
+color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const {
+    glm::vec3 reflectDir = glm::reflect(-v, rec.n);
 
+    // Calculate the Fresnel-Schlick term
+    float cosTheta = glm::max(glm::dot(glm::normalize(v), glm::normalize(rec.n)), 0.0f);
+    color F0 = albedo;  // Metals use their color as base reflectance
+    color fresnel = F0 + (color(1.0f) - F0) * pow(1.0f - cosTheta, 5.0f);
+
+    // You can return the Fresnel term directly, or multiply it with the BRDF value
+    // In the case of specular reflection, the BRDF is simply a constant multiplied by the Fresnel term
+    return fresnel * glm::max(glm::dot(reflectDir, l), 0.0f);
 }
+
 
 color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
 {
