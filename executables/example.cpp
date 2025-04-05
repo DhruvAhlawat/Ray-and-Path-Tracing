@@ -86,8 +86,8 @@ void pathtrace_scene(Scene &scene)
 
     emissive_white->albedo = color(0.9,0.9,0.9);
     cout << "light color is " << emissive_white->albedo.x << endl;
-    // Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), new Lambertian(color(0.9,0.9,0.9)));
-    // scene.objects.push_back(lightPlane);
+    Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), emissive_white);
+    scene.objects.push_back(lightPlane);
 
     Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), metallic_red);
     scene.objects.push_back(unitSphere);
