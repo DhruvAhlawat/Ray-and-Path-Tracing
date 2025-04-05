@@ -159,9 +159,14 @@ HitRecord getRayHit(const Ray &ray, Scene &scene, Interval t_range)
     return rec; // return the hit record object.
 }
 
-color Lambertian::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
-{
-    return albedo;
+bool Lambertian::sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+    glm::vec3 &sampled_dir, color &brdf_weight) const{
+    // Cosine-weighted hemisphere sampling around the normal
+    sampled_dir = sampleHemisphereCosine(rec.n); 
+
+    // Weight for Lambertian BRDF: albedo / π
+    brdf_weight = albedo * (1.0f / glm::pi<float>());
+    return true;
 }
 
 color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const {
@@ -177,6 +182,13 @@ color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const {
     return fresnel * glm::max(glm::dot(reflectDir, l), 0.0f);
 }
 
+bool Metallic::sampleDirection(const HitRecord &rec, glm::vec3 v,
+    glm::vec3 &l, color &brdf_weight) const {
+    l = reflect(v, rec.n);   // one perfect direction
+    float costheta = glm::dot(rec.n, l);
+    brdf_weight = albedo * (pow(1.0f - costheta, 5.0f)); // Fresnel term (Schlick’s approx)
+    return true;
+}
 
 color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
 {
@@ -185,7 +197,19 @@ color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) con
     return c * glm::max(glm::dot(r, l), 0.0f); // specular reflection.
 
 }
+bool SpecularMaterial::sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+    glm::vec3 &sampled_dir, color &brdf_weight) const 
+{
+    sampled_dir = reflect(-view_dir, rec.n); // Reflect the *incoming* ray
+    brdf_weight = albedo;
+    return true; // Successfully sampled
+}
 
+bool Emissive::sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+    glm::vec3 &sampled_dir, color &brdf_weight) const
+{
+    return false;
+}
 
 color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursion_depth)
 {
@@ -277,35 +301,28 @@ glm::vec3 alignToNormal(const glm::vec3 &sample, const glm::vec3 &normal) {
     return sample.x * tangent + sample.y * bitangent + sample.z * normal;
 }
 
-glm::vec3 sampleHemisphereUniform(vec3 &normal) {
-    
+glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal) {
+    // 1. Generate a cosine-weighted sample in tangent space
+    float u1 = RandomGenerator::randomFloat(); // in [0,1)
+    float u2 = RandomGenerator::randomFloat();
 
-    // float xi1 = dist(gen);
-    // float xi2 = dist(gen);
-    
-    // float theta = 2.0f * M_PI * xi1;
-    // float z = xi2;  // Height
-    // float r = sqrt(1.0f - z * z);
-    // float x = r * cos(theta);
-    // float y = r * sin(theta);
-    vec3 out = RandomGenerator::randomHemisphere();
-    while(glm::dot(out, out) > 1.0f) // keep generating until we get a point in the hemisphere.
-    {
-        out = RandomGenerator::randomHemisphere();
-    }
-    // float x = negpos(gen);
-    // float y = negpos(gen);
-    // float z = uniform(gen); // Height
-    // while(x*x + y*y + z*z > 1.0f) // keep generating until we get a point in the hemisphere.
-    // {
-    //     x = negpos(gen);
-    //     y = negpos(gen);
-    //     z = dist(gen); // Height
-    // }
-    // Normalize the vector to ensure it lies on the unit sphere
-    out = normalize(out);  // Returns a vector in the +Z hemisphere
-    return alignToNormal(out, normal); // Align the sample to the normal direction instead.
+    float r = sqrt(u1);
+    float theta = 2.0f * glm::pi<float>() * u2;
+
+    float x = r * cos(theta);
+    float y = r * sin(theta);
+    float z = sqrt(1.0f - u1); // Cosine weighting
+
+    // 2. Create an orthonormal basis (TBN)
+    glm::vec3 N = glm::normalize(normal);
+    glm::vec3 T = glm::normalize(glm::cross(glm::abs(N.x) > 0.1f ? glm::vec3(0,1,0) : glm::vec3(1,0,0), N));
+    glm::vec3 B = glm::cross(N, T);
+
+    // 3. Transform sample to world space
+    glm::vec3 worldDir = x * T + y * B + z * N;
+    return glm::normalize(worldDir);
 }
+
 
 color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth, const float continueProb)
 {
@@ -322,7 +339,19 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
         //check for end case then. 
         if(RandomGenerator::randomFloat() > continueProb) return result; // terminate the path with some probability.
     }
-    vec3 l = sampleHemisphereUniform(rec.n); //this is the direction we want to sample in this instance.
+    // vec3 l = sampleHemisphereUniform(rec.n); //this is the direction we want to sample in this instance.
+    vec3 l;
+    color weight;
+    if (rec.mat->sampleDirection(rec, -ogRay.d, l, weight)) {
+        Ray ray(rec.p + bias * rec.n, l);
+        HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
+        if (newRec.hit) {
+            color incoming = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
+            result = weight * incoming;
+        }
+}
+
+
     // now we sample in this direction, simple as that.
 
     Ray ray(rec.p + bias * rec.n, l); // first move a little in that direction.
@@ -407,8 +436,8 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
 {
     // Ray trace the image
     int num_samples = 100;
-    for (int j = 0; j < image.h; j++) {   
-        std::cout<<"\rPercentage completed: " << (float)j/(float)image.h * 100.0f << "%" << std::flush;
+    for (int j = 0; j < image.h; j++) {
+        std::cout<<"\rPercentage: " << (float)j / image.h * 100.0f << "%"<<std::flush;
         for (int i = 0; i < image.w; i++) {
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;

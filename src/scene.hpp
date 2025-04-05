@@ -219,26 +219,34 @@ public:
                             glm::vec3 &r, color &kr) const = 0;
 
     virtual bool emission() const = 0;
+    virtual bool sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+        glm::vec3 &sampled_dir, color &brdf_weight) const = 0;
 };
 
 class Lambertian: public Material {
 public:
     color albedo;
-    virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
+
+    Lambertian(color albedo): albedo(albedo) {}
+
+    virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const override {
+        // Standard Lambertian BRDF: albedo / π
+        return albedo * (1.0f / glm::pi<float>());
+    }
+
     virtual bool reflection(const HitRecord &rec, glm::vec3 v,
-                            glm::vec3 &r, color &kr) const
-    {
+                            glm::vec3 &r, color &kr) const override {
+        return false; // Lambertian doesn't reflect like a mirror
+    }
+
+    virtual bool emission() const override {
         return false;
     }
 
-    virtual bool emission() const
-    {
-        return false;
-    }
-    Lambertian(color albedo):
-        albedo(albedo) {
-    }
+    virtual bool sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+                                glm::vec3 &sampled_dir, color &brdf_weight) const override;
 };
+    
 
 class SpecularMaterial: public Material {
 public:
@@ -258,6 +266,8 @@ public:
     SpecularMaterial(color albedo):
         albedo(albedo) {
     }
+    virtual bool sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+        glm::vec3 &sampled_dir, color &brdf_weight) const override;
 };
 
 
@@ -296,12 +306,16 @@ class Metallic: public Material
         roughness(roughness) {
     }
 
+    bool sampleDirection(const HitRecord &rec, glm::vec3 v,
+        glm::vec3 &l, color &brdf_weight) const override;
+
+
 private:
     glm::vec3 sampleBlinnPhong(glm::vec3 perfectReflection, float roughness) const {
         // Sample a random vector around the perfect reflection using a Blinn-Phong distribution
         float alpha = 2.0f / (roughness * roughness) - 2.0f;
-        float phi = glm::linearRand(0.0f, 2.0f * static_cast<float>(M_PI));
-        float cosTheta = pow(glm::linearRand(0.0f, 1.0f), 1.0f / (alpha + 1.0f));
+        float phi = RandomGenerator::randomFloat() * 2.0f * glm::pi<float>();
+        float cosTheta = pow(RandomGenerator::randomFloat(), 1.0f / (alpha + 1.0f));
         float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
 
         // Convert spherical coordinates to cartesian
@@ -339,6 +353,9 @@ class Emissive: public Material
     {
         this->albedo = albedo;
     }
+    virtual bool sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
+        glm::vec3 &sampled_dir, color &brdf_weight) const override;
+
 };
 
 class PointLight {
@@ -365,5 +382,6 @@ void sendRays(Camera &camera, Scene &scene, HDRImage &image);
 inline color trace_paths(Ray &ray, Scene &scene, int num_samples);
 void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image);
 void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery);
+glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal);
 
 #endif
