@@ -392,6 +392,7 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image);
 // void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery);
 void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, string save_prefix = "out", int num_samples = 100, int saveEvery = 20);
 glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal);
+color estimateDirectLighting(const HitRecord &rec, Scene &scene);
 
 void handle_sigint(int); //to stop execution ni the middle of the loop.
 #endif
