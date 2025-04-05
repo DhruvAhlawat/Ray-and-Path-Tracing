@@ -279,7 +279,7 @@ class Metallic: public Material
 
     virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const;
     virtual bool reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, color &kr) const override {
-        glm::vec3 perfectReflection = glm::reflect(-v, rec.n); // Ideal mirror reflection
+        glm::vec3 perfectReflection = glm::reflect(v, rec.n); // Ideal mirror reflection
 
         if (roughness > 0.0f) {
             // Sample random direction around perfect reflection
@@ -289,10 +289,9 @@ class Metallic: public Material
         r = glm::normalize(perfectReflection);
 
         // Fresnel-Schlick approximation
-        float cosTheta = glm::max(glm::dot(glm::normalize(v), glm::normalize(rec.n)), 0.0f);
+        float cosTheta = glm::max(glm::dot(glm::normalize(-v), glm::normalize(rec.n)), 0.0f);
         color F0 = albedo; // Metals use their color as base reflectance
-        kr = F0 + (1.0f - F0) * pow(1.0f - cosTheta, 5.0f);
-
+        kr = F0 + (1.0f - F0) * (float) pow(1.0f - cosTheta, 5);
         return true;
     }
 
@@ -376,12 +375,12 @@ color getFixedIrradiance(vec3 point, vec3 normal,  Scene &scene);
 color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene);
 color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursionDepth);
 color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth, const float continueProb);
-
-color singleBouncePixelColor(Ray &ray, Scene &scene);
-void sendRays(Camera &camera, Scene &scene, HDRImage &image);
+void sendRays(Camera &camera, Scene &scene, HDRImage &image, int bounces = 5);
+color singleBouncePixelColor(Ray &ray, Scene &scene, int bounces = 5);
 inline color trace_paths(Ray &ray, Scene &scene, int num_samples);
 void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image);
-void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery);
+// void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery);
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int num_samples = 100, int saveEvery = 20);
 glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal);
 
 #endif

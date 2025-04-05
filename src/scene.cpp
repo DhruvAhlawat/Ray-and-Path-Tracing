@@ -180,8 +180,8 @@ color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const {
 bool Metallic::sampleDirection(const HitRecord &rec, glm::vec3 v,
     glm::vec3 &l, color &brdf_weight) const {
     l = reflect(v, rec.n);   // one perfect direction
-    float costheta = glm::dot(rec.n, l);
-    brdf_weight = albedo * (pow(1.0f - costheta, 5.0f)); // Fresnel term (Schlick’s approx)
+    float costheta = glm::dot(normalize(rec.n), normalize(l));
+    brdf_weight = albedo * (float)pow(1.0f - costheta, 5); // Fresnel term (Schlick’s approx)
     return true;
 }
 
@@ -239,9 +239,12 @@ color getFixedRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene)
 {
     color result(0.0);
     float bias = 0.1; // bias to avoid self-shadowing
+    if(rec.mat->emission())
+    {
+        return rec.mat->albedo; // just return the color of the emissive material.
+    }
     for(auto &light : scene.lights)
     {
-
         vec3 l = light.location - rec.p;
         float distance = glm::length(l);
         l = normalize(l);
@@ -370,7 +373,7 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
 
 // new
 
-color singleBouncePixelColor(Ray &ray, Scene &scene)
+color singleBouncePixelColor(Ray &ray, Scene &scene, int bounces)
 {
     color c = scene.sky; //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
     HitRecord rec = getRayHit(ray, scene);
@@ -379,8 +382,8 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
         // cout << "hit at: " << rec.p.x << " " << rec.p.y << " " << rec.p.z << endl;
         // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
         // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
-        c = getFixedRadiance(ray, rec, scene);
-        c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
+        // c = getFixedRadiance(ray, rec, scene);
+        c = specularRadiance(ray, rec, scene, bounces); // get the color from the ray.
         // c = radiance;
         // Now, we can get the color from the material.
         // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
@@ -388,15 +391,16 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
     return c;
 }
 
-void sendRays(Camera &camera, Scene &scene, HDRImage &image)
+void sendRays(Camera &camera, Scene &scene, HDRImage &image, int bounces)
 {
     // Ray trace the image
     for (int j = 0; j < image.h; j++) {   
+        std::cout<<"\rPercentage: " << (float)j / image.h * 100.0f << "%"<<std::flush;
         for (int i = 0; i < image.w; i++) {
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;
             Ray ray = scene.camera->make_ray(x, y);
-            image.pixel(i, j) = singleBouncePixelColor(ray, scene); // get the color from the ray.
+            image.pixel(i, j) = singleBouncePixelColor(ray, scene, bounces); // get the color from the ray.
         }
     }
 }
@@ -443,12 +447,12 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
     }
 }
 
-void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery = 20)
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int num_samples, int saveEvery)
 {
     // Ray trace the image
-    int num_samples = 100;
     for(int sample = 0; sample < num_samples; sample++)
     {
+        std::cout<<"\rPercentage:" << ((float)(sample)/num_samples) * 100  << "%" <<std::flush;
         for (int j = 0; j < image.h; j++) 
         {   
             for (int i = 0; i < image.w; i++) {
@@ -473,7 +477,7 @@ void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  str
             }
             SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, image.w, image.h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
             tonemap(image, tempSurface, 1, 2.2);
-            string savepath = saveFolder + "/outavg_" + to_string(sample + 1) + ".png";
+            string savepath = saveFolder + "/out_metallic_" + to_string(sample + 1) + ".png";
             IMG_SavePNG(tempSurface, savepath.c_str()); //make a folder "out" that is untracked in git.
             SDL_FreeSurface(tempSurface);
 
