@@ -314,8 +314,8 @@ private:
     glm::vec3 sampleBlinnPhong(glm::vec3 perfectReflection, float roughness) const {
         // Sample a random vector around the perfect reflection using a Blinn-Phong distribution
         float alpha = 2.0f / (roughness * roughness) - 2.0f;
-        float phi = glm::linearRand(0.0f, 2.0f * static_cast<float>(M_PI));
-        float cosTheta = pow(glm::linearRand(0.0f, 1.0f), 1.0f / (alpha + 1.0f));
+        float phi = RandomGenerator::randomFloat() * 2.0f * glm::pi<float>();
+        float cosTheta = pow(RandomGenerator::randomFloat(), 1.0f / (alpha + 1.0f));
         float sinTheta = sqrt(1.0f - cosTheta * cosTheta);
 
         // Convert spherical coordinates to cartesian

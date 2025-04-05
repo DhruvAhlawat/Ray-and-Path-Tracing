@@ -181,7 +181,7 @@ bool Metallic::sampleDirection(const HitRecord &rec, glm::vec3 v,
     glm::vec3 &l, color &brdf_weight) const {
     l = reflect(v, rec.n);   // one perfect direction
     float costheta = glm::dot(rec.n, l);
-    brdf_weight = albedo * static_cast<float> (pow(1 - costheta, 5)); // Fresnel term (Schlick’s approx)
+    brdf_weight = albedo * (pow(1.0f - costheta, 5.0f)); // Fresnel term (Schlick’s approx)
     return true;
 }
 
@@ -311,8 +311,7 @@ glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal) {
 
     // 2. Create an orthonormal basis (TBN)
     glm::vec3 N = glm::normalize(normal);
-    glm::vec3 T = glm::normalize(glm::abs(N.x) > 0.1f ? glm::vec3(0,1,0) : glm::vec3(1,0,0));
-    T = glm::normalize(glm::cross(T, N));
+    glm::vec3 T = glm::normalize(glm::cross(glm::abs(N.x) > 0.1f ? glm::vec3(0,1,0) : glm::vec3(1,0,0), N));
     glm::vec3 B = glm::cross(N, T);
 
     // 3. Transform sample to world space
@@ -433,7 +432,8 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
 {
     // Ray trace the image
     int num_samples = 100;
-    for (int j = 0; j < image.h; j++) {   
+    for (int j = 0; j < image.h; j++) {
+        std::cout<<"\rPercentage: " << (float)j / image.h * 100.0f << "%"<<std::flush;
         for (int i = 0; i < image.w; i++) {
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;
