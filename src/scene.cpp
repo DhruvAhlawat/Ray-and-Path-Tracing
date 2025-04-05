@@ -333,10 +333,9 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
         return rec.mat->albedo; //ez. just return the color of the emissive material. 
     }
 
-    if(recursion_depth >= 3)
+    if(recursion_depth >= 3 && RandomGenerator::randomFloat() > continueProb)
     {
-        //check for end case then. 
-        if(RandomGenerator::randomFloat() > continueProb) return result; // terminate the path with some probability.
+        return result; // terminate the path with some probability.
     }
     // vec3 l = sampleHemisphereUniform(rec.n); //this is the direction we want to sample in this instance.
     vec3 l;
@@ -352,7 +351,7 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
             result = direct + weight * indirect;
         }
 }
-
+    return result;
 
     // now we sample in this direction, simple as that.
 
