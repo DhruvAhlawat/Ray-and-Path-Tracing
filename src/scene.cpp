@@ -179,8 +179,9 @@ color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const {
 
 bool Metallic::sampleDirection(const HitRecord &rec, glm::vec3 v,
     glm::vec3 &l, color &brdf_weight) const {
-    l = reflect(v, rec.n);   // one perfect direction
-    float costheta = glm::dot(normalize(rec.n), normalize(l));
+    l = reflect(-v, rec.n);   // one perfect direction
+    float costheta = glm::clamp(dot(normalize(rec.n), normalize(l)), 0.0f, 1.0f);
+    // cout<<"costheta: " << costheta << endl;
     brdf_weight = albedo * (float)pow(1.0f - costheta, 5); // Fresnel term (Schlick’s approx)
     return true;
 }
@@ -344,8 +345,11 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
         Ray ray(rec.p + bias * rec.n, l);
         HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
         if (newRec.hit) {
-            color incoming = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
-            result = weight * incoming;
+            // color incoming = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
+            // result = weight * incoming;
+            color direct = estimateDirectLighting(newRec, scene);
+            color indirect = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
+            result = direct + weight * indirect;
         }
 }
 
@@ -494,4 +498,28 @@ void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  str
 
         }
     }
+}
+
+color estimateDirectLighting(const HitRecord &rec, Scene &scene) {
+    color direct(0.0f);
+    float bias = 0.01f;
+
+    for (const auto& light : scene.lights) {
+        vec3 toLight = light.location - rec.p;
+        float distance = glm::length(toLight);
+        vec3 dirToLight = glm::normalize(toLight);
+
+        // Shadow ray
+        Ray shadowRay(rec.p + bias * rec.n, dirToLight);
+        HitRecord shadowHit = getRayHit(shadowRay, scene, Interval(bias, distance - bias));
+
+        if (!shadowHit.hit) {
+            float attenuation = 1.0f / (distance * distance); // point light falloff
+            float nDotL = glm::max(glm::dot(rec.n, dirToLight), 0.0f);
+            color brdfVal = rec.mat->brdf(rec, dirToLight, -shadowRay.d);
+            direct += light.intensity * brdfVal * nDotL * attenuation;
+        }
+    }
+    // cout<<"direct color: " << direct.x << " " << direct.y << " " << direct.z << endl;
+    return direct;
 }
