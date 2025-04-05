@@ -93,8 +93,8 @@ void pathtrace_scene(Scene &scene)
     scene.objects.push_back(unitSphere);
 
     // create a box
-    Object *box = new Object(new Box(glm::vec3(-1.0, 0.0, -2.0), glm::vec3(0.0, 1.0, -1.0)), diffuse_red);
-    scene.objects.push_back(box);
+    // Object *box = new Object(new Box(glm::vec3(-1.0, 0.0, -2.0), glm::vec3(0.0, 1.0, -1.0)), diffuse_red);
+    // scene.objects.push_back(box);
     
     // Object *another = new Object(new Sphere(glm::vec3(1, 0, -3), 0.6), metallic_red);
     // scene.objects.push_back(another);
@@ -133,8 +133,8 @@ int main() {
     // part3(scene);
     pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
     // Ray trace the image
-    sendRays(camera, scene, image); 
-    // run_pathTrace(camera, scene, image); 
+    // sendRays(camera, scene, image);
+    run_pathTrace(camera, scene, image); 
     // run_pathTrace_iterative(camera, scene, image, "out/iterative", 20); // make a folder out/iterative (untracked).
     
 

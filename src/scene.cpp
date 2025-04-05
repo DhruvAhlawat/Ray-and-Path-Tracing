@@ -350,7 +350,7 @@ color singleBouncePixelColor(Ray &ray, Scene &scene)
         // c  = glm::normalize(rec.n) * 0.5f + 0.5f; // for now, just use the normal as color.
         // Now, for no indirect lighting, we can first directly get the radiance from direct scene illumination.
         c = getFixedRadiance(ray, rec, scene);
-        // c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
+        c = specularRadiance(ray, rec, scene, 10); // get the color from the ray.
         // c = radiance;
         // Now, we can get the color from the material.
         // c = rec.mat->brdf(rec, glm::normalize(scene.lights[0].location - rec.p), glm::normalize(-ray.d));
@@ -402,6 +402,7 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
     // Ray trace the image
     int num_samples = 100;
     for (int j = 0; j < image.h; j++) {   
+        std::cout<<"\rPercentage completed: " << (float)j/(float)image.h * 100.0f << "%" << std::flush;
         for (int i = 0; i < image.w; i++) {
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;
