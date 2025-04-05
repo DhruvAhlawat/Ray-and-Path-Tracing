@@ -195,7 +195,7 @@ color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) con
 bool SpecularMaterial::sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
     glm::vec3 &sampled_dir, color &brdf_weight) const 
 {
-    sampled_dir = reflect(-view_dir, rec.n); // Reflect the *incoming* ray
+    sampled_dir = reflect(view_dir, rec.n); // Reflect the *incoming* ray
     brdf_weight = albedo;
     return true; // Successfully sampled
 }
@@ -340,7 +340,7 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
     // vec3 l = sampleHemisphereUniform(rec.n); //this is the direction we want to sample in this instance.
     vec3 l;
     color weight;
-    if (rec.mat->sampleDirection(rec, -ogRay.d, l, weight)) {
+    if (rec.mat->sampleDirection(rec, ogRay.d, l, weight)) {
         Ray ray(rec.p + bias * rec.n, l);
         HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
         if (newRec.hit) {
@@ -435,8 +435,13 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
 {
     // Ray trace the image
     int num_samples = 100;
-    for (int j = 0; j < image.h; j++) {
-        std::cout<<"\rPercentage: " << (float)j / image.h * 100.0f << "%"<<std::flush;
+    for (int j = 0; j < image.h; j++) 
+    {
+        if (stop_requested) {
+            std::cout << "\nCtrl+C pressed. Exiting loop at row j = " << (j)  << std::endl;
+            break;
+        }
+        std::cout<<"Percentage: " << (float)j / image.h * 100.0f << "%             \r"<<std::flush;
         for (int i = 0; i < image.w; i++) {
             float x = 2 * (i + 0.5f) / image.w - 1;
             float y = 1 - 2 * (j + 0.5f) / image.h;
@@ -447,15 +452,89 @@ void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image)
     }
 }
 
-void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int num_samples, int saveEvery)
+// void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, string save_prefix, int num_samples, int saveEvery)
+    // {
+//     // Ray trace the image
+//     int total = (num_samples + saveEvery - 1)/(saveEvery);
+//     for(int sample = 0; sample < total; sample++)
+//     {
+//         if (stop_requested) {
+//             std::cout << "\nCtrl+C pressed. Exiting loop at sample " << (sample) * saveEvery << std::endl;
+//             break;
+//         }
+//         std::cout<<"\rPercentage:" << ((float)(sample)/total) * 100  << "%" <<std::flush;
+//         for (int j = 0; j < image.h; j++) 
+//         {   
+//              if (stop_requested) {
+//                     std::cout << "\nCtrl+C pressed. Exiting loop " << (sample) * saveEvery << std::endl;
+//                     break;
+//                 }
+//             for (int i = 0; i < image.w; i++) 
+//             {
+//                 if (stop_requested) {
+//                     std::cout << "\nCtrl+C pressed. Exiting loop " << (sample) * saveEvery << std::endl;
+//                     break;
+//                 }
+
+//                 float x = 2 * (i + 0.5f) / image.w - 1;
+//                 float y = 1 - 2 * (j + 0.5f) / image.h;
+//                 Ray ray = scene.camera->make_ray(x, y);
+//                 image.pixel(i, j) += trace_paths(ray, scene, saveEvery); // get the color from the ray.
+//                 // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+//             }
+//         }
+//         // if((sample + 1) % saveEvery == 0) //every time we will save.
+//         int sample_num = (sample + 1) * saveEvery;
+//         {
+//             for (int j = 0; j < image.h; j++) 
+//             {   
+//                 for (int i = 0; i < image.w; i++) {
+//                     image.pixel(i, j) /= sample_num; // get the color from the ray.
+//                 }
+//             }
+
+//             SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, image.w, image.h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
+//             tonemap(image, tempSurface, 1, 2.2);
+//             string savepath = saveFolder + "/path_" + save_prefix + "_" + to_string(sample_num) + ".png";
+//             IMG_SavePNG(tempSurface, savepath.c_str()); //make a folder "out" that is untracked in git.
+//             SDL_FreeSurface(tempSurface);
+
+//             for (int j = 0; j < image.h; j++) 
+//             {   
+//                 for (int i = 0; i < image.w; i++) {
+//                     image.pixel(i, j) *= sample_num; // get the color from the ray. //to get back to the sum.
+//                 }
+//             }
+
+//         }
+//     }
+// }
+
+
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, string save_prefix, int num_samples, int saveEvery)
 {
     // Ray trace the image
+    int total = (num_samples + saveEvery - 1)/(saveEvery);
     for(int sample = 0; sample < num_samples; sample++)
     {
-        std::cout<<"\rPercentage:" << ((float)(sample)/num_samples) * 100  << "%" <<std::flush;
+        if (stop_requested) {
+            std::cout << "\nCtrl+C pressed. Exiting loop at sample " << (sample)  << std::endl;
+            break;
+        }
+        std::cout<<"Percentage:" << ((float)(sample)/num_samples) * 100  << "%           \r" <<std::flush;
         for (int j = 0; j < image.h; j++) 
         {   
-            for (int i = 0; i < image.w; i++) {
+             if (stop_requested) {
+                    std::cout << "\nCtrl+C pressed. Exiting loop " << (sample) << std::endl;
+                    break;
+                }
+            for (int i = 0; i < image.w; i++) 
+            {
+                if (stop_requested) {
+                    std::cout << "\nCtrl+C pressed. Exiting loop " << (sample) << std::endl;
+                    break;
+                }
+
                 float x = 2 * (i + 0.5f) / image.w - 1;
                 float y = 1 - 2 * (j + 0.5f) / image.h;
                 Ray ray = scene.camera->make_ray(x, y);
@@ -463,35 +542,49 @@ void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  str
                 // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
             }
         }
-        if((sample + 1) % saveEvery == 0)
+        if((sample + 1) % saveEvery == 0) //every time we will save.
         {
+            int sample_num = (sample + 1);// * saveEvery;
             for (int j = 0; j < image.h; j++) 
             {   
                 for (int i = 0; i < image.w; i++) {
-                    // float x = 2 * (i + 0.5f) / image.w - 1;
-                    // float y = 1 - 2 * (j + 0.5f) / image.h;
-                    // Ray ray = scene.camera->make_ray(x, y);
-                    image.pixel(i, j) /= (sample + 1); // get the color from the ray.
-                    // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+                    image.pixel(i, j) /= sample_num; // get the color from the ray.
                 }
             }
+
             SDL_Surface* tempSurface = SDL_CreateRGBSurface(0, image.w, image.h, 32, 0x00FF0000, 0x0000FF00, 0x000000FF, 0xFF000000);
             tonemap(image, tempSurface, 1, 2.2);
-            string savepath = saveFolder + "/out_metallic_" + to_string(sample + 1) + ".png";
+            string savepath = saveFolder + "/path_" + save_prefix + "_" + to_string(sample_num) + ".png";
             IMG_SavePNG(tempSurface, savepath.c_str()); //make a folder "out" that is untracked in git.
             SDL_FreeSurface(tempSurface);
 
             for (int j = 0; j < image.h; j++) 
             {   
                 for (int i = 0; i < image.w; i++) {
-                    // float x = 2 * (i + 0.5f) / image.w - 1;
-                    // float y = 1 - 2 * (j + 0.5f) / image.h;
-                    // Ray ray = scene.camera->make_ray(x, y);
-                    image.pixel(i, j) *= (sample + 1); // get the color from the ray. //to get back to the sum.
-                    // image.pixel(i, j) = acc/num_samples; // get the color from the ray.
+                    image.pixel(i, j) *= sample_num; // get the color from the ray. //to get back to the sum.
                 }
             }
-
         }
     }
+
+    // Save the final image
+    for (int j = 0; j < image.h; j++) 
+    {   
+        for (int i = 0; i < image.w; i++) {
+            image.pixel(i, j) /= num_samples; // get the color from the ray.
+        }
+    }
+
+}
+
+std::atomic<bool> stop_requested(false);
+
+void handle_sigint(int)
+{
+    stop_requested = true;
+}
+
+void setup_signal_handler()
+{
+    std::signal(SIGINT, handle_sigint);
 }

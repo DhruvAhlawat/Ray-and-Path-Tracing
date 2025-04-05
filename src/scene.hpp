@@ -1,5 +1,15 @@
 #ifndef SCENE_HPP
 #define SCENE_HPP
+#include <csignal>
+#include <atomic>
+
+
+#pragma once
+#include <atomic>
+
+extern std::atomic<bool> stop_requested;
+
+void setup_signal_handler();
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -380,7 +390,8 @@ color singleBouncePixelColor(Ray &ray, Scene &scene, int bounces = 5);
 inline color trace_paths(Ray &ray, Scene &scene, int num_samples);
 void run_pathTrace(Camera &camera, Scene &scene, HDRImage &image);
 // void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int saveEvery);
-void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, int num_samples = 100, int saveEvery = 20);
+void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  string saveFolder, string save_prefix = "out", int num_samples = 100, int saveEvery = 20);
 glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal);
 
+void handle_sigint(int); //to stop execution ni the middle of the loop.
 #endif
