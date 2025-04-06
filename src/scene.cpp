@@ -209,7 +209,7 @@ bool Emissive::sampleDirection(const HitRecord &rec, glm::vec3 view_dir,
 
 bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, color &kr) const {
     glm::vec3 n = rec.n;
-    float cosTheta = glm::dot(-v, n);
+    float cosTheta = std::fmin(glm::dot(-v, n), 1.0f);
     float etaI = 1.0f;
     float etaT = eta;
 
@@ -230,11 +230,11 @@ bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, col
         return true;
     }
 
-    float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+    // float cosThetaT = sqrtf(1.0f - sin2ThetaT);
 
     // Fresnel reflectance (using Schlick's approximation)
     float R0 = powf((etaI - etaT) / (etaI + etaT), 2.0f);
-    float cosMax = glm::max(cosTheta, cosThetaT); // use max of theta_i and theta_t
+    float cosMax = cosTheta; // use max of theta_i and theta_t
     float F = R0 + (1.0f - R0) * powf(1.0f - cosMax, 5.0f);
 
     // Importance sample: reflect with probability F, refract with 1 - F
@@ -251,7 +251,7 @@ bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, col
 
 bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l, color &brdf_weight) const {
     glm::vec3 n = rec.n;
-    float cosTheta = glm::dot(-v, n);
+    float cosTheta = std::fmin(glm::dot(-v, n), 1.0f);
     float etaI = 1.0f;
     float etaT = eta;
 
@@ -263,7 +263,7 @@ bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l
     }
 
     float etaRatio = etaI / etaT;
-    float sin2ThetaT = etaRatio * etaRatio * (1.0f - cosTheta * cosTheta);
+    float sin2ThetaT = etaRatio * (1.0f - cosTheta * cosTheta);
 
     // Total Internal Reflection (TIR)
     if (sin2ThetaT > 1.0f) {
@@ -272,11 +272,11 @@ bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l
         return true;
     }
 
-    float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+    // float cosThetaT = sqrtf(1.0f - sin2ThetaT);
 
     // Fresnel-Schlick approximation
     float R0 = powf((etaI - etaT) / (etaI + etaT), 2.0f);
-    float cosMax = glm::max(cosTheta, cosThetaT);
+    float cosMax = cosTheta;
     float F = R0 + (1.0f - R0) * powf(1.0f - cosMax, 5.0f);
 
     if (RandomGenerator::randomFloat() < F) {
