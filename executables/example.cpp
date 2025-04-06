@@ -19,9 +19,21 @@ void demo_part1(Scene &scene)
     Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -2), 1.0f), nullptr);
     scene.objects.push_back(unitSphere);
 
-
     Object *sphere2 = new Object(new Sphere(glm::vec3(0.0f, -101.0f, -2), 100.0f), nullptr);
     scene.objects.push_back(sphere2);
+
+    transform = translate(mat4(1.0f), vec3(-1,0.5,0.5));
+
+    Object *box1 = new Object(new Box(vec3(-0.5f, -0.5f, -3.0f), vec3(-0.0f, 1.5f, -2.0f)), nullptr, transform);
+    scene.objects.push_back(box1);
+
+    transform = translate(mat4(1.0f), vec3(0,-1.0,1.0));
+
+    Object *ground = new Object(new SquarePlane(vec3(0,-1,-2), vec3(0,1,0), 3), nullptr);
+    scene.objects.push_back(ground);
+    
+    Object *box2 = new Object(new Box(vec3(-0.8f, 0.5f, -1.8f), vec3(-0.5f, 0.8f, -1.6f)), nullptr, transform);
+    scene.objects.push_back(box2);
 }
 
 void specular_scene_better(Scene &scene)
@@ -246,10 +258,10 @@ void pathtrace_scene(Scene &scene)
     Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), emissive_white);
     scene.objects.push_back(lightPlane);
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), mirror);
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), new Dielectric(1.5));
     scene.objects.push_back(unitSphere);
 
-    Object *unitSphere1 = new Object(new Sphere(glm::vec3(1.4, 0, -2.5), 0.6), diffuse_red);
+    Object *unitSphere1 = new Object(new Sphere(glm::vec3(1.4, 0, -2.5), 0.6), metallic_red);
     scene.objects.push_back(unitSphere1);
 
     Object *unitSphere2 = new Object(new Sphere(glm::vec3(-1.4, 0, -2.5), 0.6), greenish_mirror);
@@ -273,13 +285,85 @@ void pathtrace_scene(Scene &scene)
 void part3(Scene &scene)
 {
     demo_part1(scene); //sets up sphere objects.
-    scene.objects[0]->mat = new Lambertian(color(0.7, 0.1, 0.1));
-    scene.objects[1]->mat = new Lambertian(color(0.8, 0.8, 0.1));
-    color intensity = color(2, 2, 2); // white light.
-    scene.lights.emplace_back(vec3(1,1,1), intensity); // white point light.
-    scene.lights.emplace_back(vec3(0,1,-1), intensity); // white point light.
+    // scene.objects[0]->mat = new Lambertian(color(0.7, 0.1, 0.1));
+    // scene.objects[1]->mat = new Lambertian(color(0.8, 0.8, 0.1));
+    for (auto &object : scene.objects) {
+        color c = glm::abs(RandomGenerator::randomVec3());
+        object->mat = new Lambertian(c);
+    }
+
+    color intensity = color(5, 5, 5); // white light.
+    scene.lights.emplace_back(vec3(0.5,2,-1), intensity); // white point light.
+    scene.lights.emplace_back(vec3(0,0,5), intensity); // white point light.
 }
 
+void part4(Scene &scene)
+{
+    mat4 transform = mat4(1.0f);
+
+    // Rotated box
+    transform = rotate(mat4(1.0f), glm::radians(45.0f), vec3(0, 1, 0));
+    Object *rotatedBox = new Object(new Box(vec3(-0.5f, -0.5f, -3.0f), vec3(0.5f, 0.5f, -2.0f)), new Lambertian(color(0.7, 0.3, 0.3)), transform);
+    scene.objects.push_back(rotatedBox);
+
+    // Stretched sphere (ellipsoid)
+    transform = scale(mat4(1.0f), vec3(1.0f, 2.5f, 1.0f));
+    Object *stretchedSphere = new Object(new Sphere(vec3(1.0f, 0.0f, -3.0f), 0.5f), new Metallic(color(0.3, 0.7, 0.3)), transform);
+    scene.objects.push_back(stretchedSphere);
+
+    // Another rotated box
+    transform = rotate(mat4(1.0f), glm::radians(30.0f), vec3(1, 0, 0));
+    Object *rotatedBox2 = new Object(new Box(vec3(-0.5f, -1.0f, -1.5f), vec3(0.0f, -0.5f, -1.0f)), new Lambertian(color(0.3, 0.3, 0.7)), transform);
+    scene.objects.push_back(rotatedBox2);
+
+    // Another stretched sphere
+    transform = scale(mat4(1.0f), vec3(1.5f, 1.0f, 1.0f));
+    Object *stretchedSphere2 = new Object(new Sphere(vec3(0.5f, 0.0f, -0.7f), 0.3f), new SpecularMaterial(color(0.9, 0.9, 0.9)), transform);
+    scene.objects.push_back(stretchedSphere2);
+
+    // Add a ground plane for reference
+    Object *ground = new Object(new SquarePlane(vec3(0, -1, -2), vec3(0, 1, 0), 5), new Lambertian(color(0.8, 0.8, 0.8)));
+    scene.objects.push_back(ground);
+    // Add lights to the scene
+    color lightIntensity = color(10, 10, 10); // Bright white light
+    scene.lights.emplace_back(vec3(2, 3, 1), lightIntensity); // Light above and to the right
+    scene.lights.emplace_back(vec3(-2, 3, 1), lightIntensity); // Light above and to the left
+}
+
+void part5(Scene &scene)
+{
+    // Add a white ground plane
+    Object *ground = new Object(new Plane(vec3(0, 1, 0), 1), new Lambertian(color(1, 1, 1)));
+    scene.objects.push_back(ground);
+
+    // Add a colored metallic sphere
+    Material *metallic_blue = new Metallic(color(0.1, 0.1, 0.8));
+    Object *metallicSphere = new Object(new Sphere(vec3(1.0f, 0.0f, -2.5f), 0.7f), metallic_blue);
+    scene.objects.push_back(metallicSphere);
+
+    // Add a diffuse box of a different color
+    Material *diffuse_red = new Lambertian(color(0.8, 0.1, 0.1));
+    Object *diffuseBox = new Object(new Box(vec3(-1.0f, -1.0f, -3.5f), vec3(-0.5f, 0.0f, -2.5f)), diffuse_red);
+    scene.objects.push_back(diffuseBox);
+
+    // Add another diffuse box
+    vec3 translation(-2.0f, 0.0f, 2.0f);
+    mat4 transform = translate(mat4(1.0f), translation);
+    Material *diffuse_green = new Lambertian(color(0.1, 0.8, 0.1));
+    Object *diffuseBox2 = new Object(new Box(vec3(0.5f, -1.0f, -4.0f), vec3(1.5f, -0.5f, -3.5f)), diffuse_green, transform);
+    scene.objects.push_back(diffuseBox2);
+
+    // -----------PART 5----------------
+    // Add a point light source at a diagonal angle
+    // color lightIntensity = color(10, 10, 10); // Bright white light
+    // scene.lights.emplace_back(vec3(2, 3, -1), lightIntensity); // Light above and to the right
+
+    // ---------------PART 6 -------------------
+    Material *emissive_sphere_material = new Emissive(color(10, 10, 10)); // Bright emissive material
+    Object *emissiveSphere = new Object(new Sphere(vec3(2, 3, -1), 1.0f), emissive_sphere_material); // Sphere at light position
+    scene.objects.push_back(emissiveSphere);
+
+}
 
 int main() {
     int w = 800, h = 600;
@@ -295,8 +379,12 @@ int main() {
         return 1;
     }
     
+    // demo_part1(scene);
     // part3(scene);
-    pathtrace_scene2(scene); //sets up the scene with objects and lights for the specular part.
+    // part4(scene);
+    part5(scene);
+    // pathtrace_scene(scene);
+    // pathtrace_scene2(scene); //sets up the scene with objects and lights for the specular part.
     // specular_scene_better(scene); //sets up the scene with objects and lights for the specular part.
     // specular_scene(scene);
     // Ray trace the image
