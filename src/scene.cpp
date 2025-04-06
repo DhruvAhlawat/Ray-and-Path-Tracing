@@ -193,6 +193,7 @@ bool Metallic::sampleDirection(const HitRecord &rec, glm::vec3 v,
     return true;
 }
 
+
 color SpecularMaterial::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const
 {
     color c = albedo;

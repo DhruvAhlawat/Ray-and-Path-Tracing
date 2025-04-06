@@ -165,7 +165,7 @@ void pathtrace_scene2(Scene &scene)
     Material *greenish_mirror = new SpecularMaterial(color(0.4, 0.99, 0.4));
     
     Material *emissive_white = new Emissive(color(3)); //DOESNT WORK and DOESNT SET ALBEDO FOR SOME REASON. Maybe cause overwrites.
-    emissive_white->albedo = color(100);
+    emissive_white->albedo = color(3);
     cout << "light color is " << emissive_white->albedo.x << endl;
 
     float groundpos = -1;
@@ -300,9 +300,9 @@ int main() {
     // specular_scene_better(scene); //sets up the scene with objects and lights for the specular part.
     // specular_scene(scene);
     // Ray trace the image
-    sendRays(camera, scene, image, 7); 
+    // sendRays(camera, scene, image, 7); 
     //  run_pathTrace(camera, scene, image); 
-    // run_pathTrace_iterative(camera, scene, image, "out/iterative", "metallic", 1000, 20); // make a folder out/iterative (untracked).
+    run_pathTrace_iterative(camera, scene, image, "out/iterative", "correct_scene", 1000, 10); // make a folder out/iterative (untracked).
     
 
     // Convert HDRImage to a simple RGBA buffer
