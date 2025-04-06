@@ -359,8 +359,7 @@ class Emissive: public Material
     }
 
     Emissive(color albedo)
-    {
-        this->albedo = albedo;
+    : albedo(albedo) {
     }
     virtual bool sampleDirection(const HitRecord &rec, glm::vec3 view_dir, 
         glm::vec3 &sampled_dir, color &brdf_weight) const override;
