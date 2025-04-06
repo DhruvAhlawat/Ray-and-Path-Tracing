@@ -5,7 +5,9 @@
 #include <iostream>
 
  std::random_device RandomGenerator::rd; //static so we dont keep creating new random devices yaknow.
- std::mt19937 RandomGenerator::gen(rd());
+//  std::mt19937 RandomGenerator::gen(rd());
+std::mt19937 RandomGenerator::gen(14);
+
  std::uniform_real_distribution<float> RandomGenerator::uniform(0.0f, 1.0f);
  std::uniform_real_distribution<float> RandomGenerator::negpos(-1.0f,1.0f);
 
@@ -133,6 +135,16 @@ void part2(Scene &scene){
 }
 
 
+void create_random_sphere(Scene &scene)
+{
+    vec3 center = vec3(1.5f * (RandomGenerator::randomNegPos()), 2 * RandomGenerator::randomNegPos(),-2.5 + 1.5f * RandomGenerator::randomNegPos());
+    float size = 0.7 * RandomGenerator::randomFloat();
+    color randcolor = RandomGenerator::randomVec3();
+    Material *curmat = new Metallic(randcolor, 0.5*RandomGenerator::randomFloat());
+    Object *sphere = new Object(new Sphere(center, size), curmat);
+    scene.objects.push_back(sphere);
+}
+
 void pathtrace_scene2(Scene &scene)
 {
     color intensity = color(12); // white light.
@@ -144,51 +156,66 @@ void pathtrace_scene2(Scene &scene)
     Material *diffuse_grey = new Lambertian(color(0.8, 0.8, 0.8));
     Material *diffuse_blue = new Lambertian(color(0.1, 0.1, 0.8));
     
-    Material *metallic_red = new Metallic(color(0.9, 0.2, 0.3), 0.4);
+    Material *metallic_red = new Metallic(color(0.9, 0.2, 0.3), 0.4f);
     Material *metallic_green = new Metallic(color(0.4, 0.9, 0.4));
-    Material *metallic_blue = new Metallic(color(0.1, 0.1, 0.7));
+    Material *metallic_blue = new Metallic(color(0.4, 0.4, 0.9), 0.2f);
     
     Material *mirror = new SpecularMaterial(color(0.9, 0.9, 0.9));
-
+    Material *actual_mirror = new SpecularMaterial(color(0.85, 0.99, 0.85));
     Material *greenish_mirror = new SpecularMaterial(color(0.4, 0.99, 0.4));
     
     Material *emissive_white = new Emissive(color(3)); //DOESNT WORK and DOESNT SET ALBEDO FOR SOME REASON. Maybe cause overwrites.
-    emissive_white->albedo = color(3);
+    emissive_white->albedo = color(100);
     cout << "light color is " << emissive_white->albedo.x << endl;
 
-    Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,1,0), 1), emissive_white);
+    float groundpos = -1;
+    Object *ground = new Object(new SquarePlane(vec3(0,groundpos,-2), vec3(0,1,0), 5), diffuse_yellow);
+    scene.objects.push_back(ground);
+
+    Object *lightPlane= new Object(new SquarePlane(vec3(0,3,-2), vec3(0,-1,0), 5), emissive_white);
     scene.objects.push_back(lightPlane);
 
-    Object *wall = new Object(new SquarePlane(vec3(3.5,1.5,-2), vec3(-1,0,0), 5), diffuse_grey);
+    // Object *lightPlane= new Object(new SquarePlane(vec3(0,1.5,-2), vec3(0,-1,0), 0.5), emissive_white);
+    // scene.objects.push_back(lightPlane);
+
+    Object *wall = new Object(new SquarePlane(vec3(3,1.5,-2), vec3(-1,0,0), 10), diffuse_grey);
     scene.objects.push_back(wall);
 
-    Object *wall2 = new Object(new SquarePlane(vec3(-3.5,1.5,-2), vec3(1,0,0), 5), diffuse_grey);
+    Object *wall2 = new Object(new SquarePlane(vec3(-3,1.5,-2), vec3(1,0,0), 10), diffuse_grey);
     scene.objects.push_back(wall2);
 
-    Object *backwall = new Object(new SquarePlane(vec3(0,1.5,-7), vec3(0,0,1), 5), diffuse_blue);
+    Object *backwall = new Object(new SquarePlane(vec3(0,1.5,-7), vec3(0,0,1), 10), actual_mirror);
     scene.objects.push_back(backwall);
+    
+    Object *frontwall = new Object(new SquarePlane(vec3(0,1.5,1), vec3(0,0,-1), 10), actual_mirror);
+    scene.objects.push_back(frontwall);
 
-    Object *unitSphere = new Object(new Sphere(glm::vec3(0, 0, -3), 0.6), mirror);
-    scene.objects.push_back(unitSphere);
+    float rad = 0.4;
+    Object *unitSphere = new Object(new Sphere(glm::vec3(0, groundpos + rad, -3), 0.5), mirror);
+    // scene.objects.push_back(unitSphere);
 
     // Object *unitSphere1 = new Object(new Sphere(glm::vec3(1.4, 0, -2.5), 0.6), metallic_red);
-    Object *unitSphere1 = new Object(new Sphere(glm::vec3(1.4, 0, -2.5), 0.6), diffuse_red);
+    float rad1 = 0.6;
+    Object *unitSphere1 = new Object(new Sphere(glm::vec3(1.4, groundpos + rad1, -2.5), rad1), metallic_red);
     scene.objects.push_back(unitSphere1);
 
-    Object *unitSphere2 = new Object(new Sphere(glm::vec3(-1.4, 0, -2.5), 0.6), greenish_mirror);
+    float rad2 = 0.4;
+    Object *unitSphere2 = new Object(new Sphere(glm::vec3(-1.4, groundpos + rad2, -2.5), 0.4), metallic_green);
     // Object *unitSphere2 = new Object(new Sphere(glm::vec3(-1.4, 0, -2.5), 0.6), greenish_mirror);
     scene.objects.push_back(unitSphere2);
-    // create a box
-    // Object *box = new Object(new Box(glm::vec3(-1.0, 0.0, -2.0), glm::vec3(0.0, 1.0, -1.0)), diffuse_red);
-    // scene.objects.push_back(box);
+
+  
+    vec3 boxCenter(0, groundpos + 0.2, -2);
+    vec3 boxDim(0.2,0.2,0.2);
+    Object *box = new Object(new Box(boxCenter - boxDim, boxCenter + boxDim), diffuse_blue);
+    scene.objects.push_back(box);
     
     // Object *another = new Object(new Sphere(glm::vec3(1, 0, -3), 0.6), metallic_red);
     // scene.objects.push_back(another);
     // Object *sphere2 = new Object(new Sphere(glm::vec3(0.6, 0.6, -2), 0.2f), metallic_red);
     // scene.objects.push_back(sphere2);
 
-    Object *ground = new Object(new SquarePlane(vec3(0,-1,-2), vec3(0,1,0), 5), diffuse_yellow);
-    scene.objects.push_back(ground);
+  
 
     // Object *box = new Object(new Box(vec3(0, 0, -2), vec3(0, 0.4, -2)), diffuse_blue);
     // scene.objects.push_back(box);
@@ -258,22 +285,24 @@ int main() {
     int w = 800, h = 600;
     HDRImage image(w, h);
     Scene scene;
+    // vec3 target(0,0,-2), eye (0,1,0), up(0,1,0);
     Camera camera(w,h, vec3(0,0,0), vec3(0,0,-1), vec3(0,1,0)); 
+    // Camera camera(w,h, target, eye, up); 
     scene.camera = &camera;
     setup_signal_handler();
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         std::cerr << "SDL init failed: " << SDL_GetError() << std::endl;
         return 1;
     }
+    
     // part3(scene);
-    // pathtrace_scene(scene); //sets up the scene with objects and lights for the specular part.
+    pathtrace_scene2(scene); //sets up the scene with objects and lights for the specular part.
     // specular_scene_better(scene); //sets up the scene with objects and lights for the specular part.
     // specular_scene(scene);
-    pathtrace_scene2(scene);
     // Ray trace the image
     sendRays(camera, scene, image, 7); 
     //  run_pathTrace(camera, scene, image); 
-    // run_pathTrace_iterative(camera, scene, image, "out/iterative", "diff_spec", 200, 20); // make a folder out/iterative (untracked).
+    // run_pathTrace_iterative(camera, scene, image, "out/iterative", "metallic", 1000, 20); // make a folder out/iterative (untracked).
     
 
     // Convert HDRImage to a simple RGBA buffer

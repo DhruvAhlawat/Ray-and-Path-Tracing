@@ -178,11 +178,18 @@ color Metallic::brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const {
 }
 
 bool Metallic::sampleDirection(const HitRecord &rec, glm::vec3 v,
-    glm::vec3 &l, color &brdf_weight) const {
-    l = reflect(-v, rec.n);   // one perfect direction
+    glm::vec3 &l, color &brdf_weight) const 
+{
+    l = reflect(v, rec.n);   // one perfect direction
+    if(roughness > 0.0f)
+    {
+        l = sampleBlinnPhong(l, roughness);
+    }
     float costheta = glm::clamp(dot(normalize(rec.n), normalize(l)), 0.0f, 1.0f);
     // cout<<"costheta: " << costheta << endl;
-    brdf_weight = albedo * (float)pow(1.0f - costheta, 5); // Fresnel term (Schlick’s approx)
+    // brdf_weight = albedo * (float)pow(1.0f - costheta, 5); // Fresnel term (Schlick’s approx)
+    color F0 = albedo; // Metals use their color as base reflectance
+    brdf_weight = F0 + (1.0f - F0) * (float) pow(1.0f - costheta, 5);
     return true;
 }
 
@@ -346,7 +353,7 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
         if (newRec.hit) {
             // color incoming = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
             // result = weight * incoming;
-            color direct = estimateDirectLighting(newRec, scene);
+            color direct = color(0); //estimateDirectLighting(newRec, scene);
             color indirect = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
             result = direct + weight * indirect;
         }
@@ -537,7 +544,6 @@ void run_pathTrace_iterative(Camera &camera, Scene &scene, HDRImage &image,  str
                     std::cout << "\nCtrl+C pressed. Exiting loop " << (sample) << std::endl;
                     break;
                 }
-
                 float x = 2 * (i + 0.5f) / image.w - 1;
                 float y = 1 - 2 * (j + 0.5f) / image.h;
                 Ray ray = scene.camera->make_ray(x, y);
