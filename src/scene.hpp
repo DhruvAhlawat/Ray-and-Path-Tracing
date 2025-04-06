@@ -367,6 +367,25 @@ class Emissive: public Material
 
 };
 
+class Dielectric : public Material {
+    public:
+        float eta;      // Index of refraction (e.g., 1.5 for glass)
+        color albedo;   // Tint or absorption color
+    
+        Dielectric(float eta, color albedo = color(1.0f)) : eta(eta), albedo(albedo) {}
+    
+        virtual bool reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, color &kr) const override;
+    
+        virtual color brdf(const HitRecord &rec, glm::vec3 l, glm::vec3 v) const override {
+            return color(0.0f); // Pure specular, handled via reflection()
+        }
+    
+        virtual bool emission() const override { return false; }
+    
+        bool sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l, color &brdf_weight) const override;
+    };
+    
+
 class PointLight {
 public:
     glm::vec3 location;

@@ -214,6 +214,90 @@ bool Emissive::sampleDirection(const HitRecord &rec, glm::vec3 view_dir,
     return false;
 }
 
+bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, color &kr) const {
+    glm::vec3 n = rec.n;
+    float cosTheta = std::fmin(glm::dot(-v, n), 1.0f);
+    float etaI = 1.0f;
+    float etaT = eta;
+
+    bool entering = cosTheta > 0.0f;
+    if (!entering) {
+        n = -n;
+        std::swap(etaI, etaT);
+        cosTheta = glm::dot(-v, n);
+    }
+
+    float etaRatio = etaI / etaT;
+    float sin2ThetaT = etaRatio * etaRatio * (1.0f - cosTheta * cosTheta);
+
+    // Total Internal Reflection check
+    if (sin2ThetaT > 1.0f) {
+        r = glm::reflect(v, n);
+        kr = color(1.0f); // full reflection
+        return true;
+    }
+
+    // float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+
+    // Fresnel reflectance (using Schlick's approximation)
+    float R0 = powf((etaI - etaT) / (etaI + etaT), 2.0f);
+    float cosMax = cosTheta; // use max of theta_i and theta_t
+    float F = R0 + (1.0f - R0) * powf(1.0f - cosMax, 5.0f);
+
+    // Importance sample: reflect with probability F, refract with 1 - F
+    if (RandomGenerator::randomFloat() < F) {
+        r = glm::reflect(v, n);
+        kr = color(F);
+    } else {
+        r = glm::refract(v, n, etaRatio);
+        kr = color(1.0f - F);
+    }
+
+    return true;
+}
+
+bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l, color &brdf_weight) const {
+    glm::vec3 n = rec.n;
+    float cosTheta = std::fmin(glm::dot(-v, n), 1.0f);
+    float etaI = 1.0f;
+    float etaT = eta;
+
+    bool entering = cosTheta > 0.0f;
+    if (!entering) {
+        n = -n;
+        std::swap(etaI, etaT);
+        cosTheta = glm::dot(-v, n);
+    }
+
+    float etaRatio = etaI / etaT;
+    float sin2ThetaT = etaRatio * (1.0f - cosTheta * cosTheta);
+
+    // Total Internal Reflection (TIR)
+    if (sin2ThetaT > 1.0f) {
+        l = glm::reflect(v, n);
+        brdf_weight = albedo; // All light is reflected
+        return true;
+    }
+
+    // float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+
+    // Fresnel-Schlick approximation
+    float R0 = powf((etaI - etaT) / (etaI + etaT), 2.0f);
+    float cosMax = cosTheta;
+    float F = R0 + (1.0f - R0) * powf(1.0f - cosMax, 5.0f);
+
+    if (RandomGenerator::randomFloat() < F) {
+        l = glm::reflect(v, n);
+        brdf_weight = color(F) * albedo; // reflected component
+    } else {
+        l = glm::refract(v, n, etaRatio);
+        brdf_weight = color(1.0f - F) * albedo; // transmitted component
+    }
+
+    l = glm::normalize(l);
+    return true;
+}
+
 color specularRadiance(Ray &ogRay, HitRecord &rec,  Scene &scene, int recursion_depth)
 {
     if(recursion_depth <= 0) return scene.sky; //no computations here.
