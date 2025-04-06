@@ -355,12 +355,13 @@ void part5(Scene &scene)
 
     // -----------PART 5----------------
     // Add a point light source at a diagonal angle
-    // color lightIntensity = color(10, 10, 10); // Bright white light
-    // scene.lights.emplace_back(vec3(2, 3, -1), lightIntensity); // Light above and to the right
+    color lightIntensity = color(10, 10, 10); // Bright white light
+    scene.lights.emplace_back(vec3(2, 3, -1), lightIntensity); // Light above and to the right
 
     // ---------------PART 6 -------------------
     Material *emissive_sphere_material = new Emissive(color(10, 10, 10)); // Bright emissive material
-    Object *emissiveSphere = new Object(new Sphere(vec3(2, 3, -1), 1.0f), emissive_sphere_material); // Sphere at light position
+    emissive_sphere_material->albedo = 10.0f * color(1);
+    Object *emissiveSphere = new Object(new Sphere(vec3(0, 3, -2), 1.0f), emissive_sphere_material); // Sphere at light position
     scene.objects.push_back(emissiveSphere);
 
 }
