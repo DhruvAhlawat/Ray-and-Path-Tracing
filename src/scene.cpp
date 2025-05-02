@@ -217,7 +217,7 @@ bool Emissive::sampleDirection(const HitRecord &rec, glm::vec3 view_dir,
 
 bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, color &kr) const {
     glm::vec3 n = rec.n;
-    float cosTheta = std::fmin(glm::dot(-v, n), 1.0f);
+    float cosTheta = std::min(glm::dot(-v, n), 1.0f);
     float etaI = 1.0f;
     float etaT = eta;
 
@@ -238,13 +238,13 @@ bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, col
         return true;
     }
 
-    // float cosThetaT = sqrtf(1.0f - sin2ThetaT);
+    float cosThetaT = sqrtf(1.0f - sin2ThetaT);
 
     // Fresnel reflectance (using Schlick's approximation)
     float R0 = powf((etaI - etaT) / (etaI + etaT), 2.0f);
-    float cosMax = cosTheta; // use max of theta_i and theta_t
+    float cosMax = std::min(cosTheta, cosThetaT); // use max of theta_i and theta_t
     float F = R0 + (1.0f - R0) * powf(1.0f - cosMax, 5.0f);
-
+    // F = F/4; //reduce the probability of reflections, and maximize refractions. 
     // Importance sample: reflect with probability F, refract with 1 - F
     if (RandomGenerator::randomFloat() < F) {
         r = glm::reflect(v, n);
@@ -257,9 +257,10 @@ bool Dielectric::reflection(const HitRecord &rec, glm::vec3 v, glm::vec3 &r, col
     return true;
 }
 
-bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l, color &brdf_weight) const {
+bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l, color &brdf_weight) const 
+{
     glm::vec3 n = rec.n;
-    float cosTheta = std::fmin(glm::dot(-v, n), 1.0f);
+    float cosTheta = std::min(glm::dot(-normalize(v), normalize(n)), 1.0f);
     float etaI = 1.0f;
     float etaT = eta;
 
@@ -267,7 +268,9 @@ bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l
     if (!entering) {
         n = -n;
         std::swap(etaI, etaT);
-        cosTheta = glm::dot(-v, n);
+        // cosTheta = std::min(glm::dot(-v, n), 1.0f);
+         cosTheta = std::min(glm::dot(-normalize(v), normalize(n)), 1.0f);
+
     }
 
     float etaRatio = etaI / etaT;
@@ -285,8 +288,10 @@ bool Dielectric::sampleDirection(const HitRecord &rec, glm::vec3 v, glm::vec3 &l
     // Fresnel-Schlick approximation
     float R0 = powf((etaI - etaT) / (etaI + etaT), 2.0f);
     float cosMax = cosTheta;
-    float F = R0 + (1.0f - R0) * powf(1.0f - cosMax, 5.0f);
+    float F = R0 + (1.0f - R0) * pow(1.0f - cosMax, 5.0f);
 
+    // F = 0; //need more refractions
+    // if(!entering) F = 0; //when we are exiting, then we dont do any reflections. only refract to go out. 
     if (RandomGenerator::randomFloat() < F) {
         l = glm::reflect(v, n);
         brdf_weight = color(F) * albedo; // reflected component
@@ -418,22 +423,23 @@ glm::vec3 sampleHemisphereCosine(const glm::vec3 &normal) {
 color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth, const float continueProb)
 {
     color result(0.0f);
-    float bias = 0.01; // bias to avoid self-shadowing
+    float bias = 0.05; // bias to avoid self-shadowing
     if(rec.mat->emission())
     {
         // cout << "hit a light! with albedo: " << rec.mat->albedo.x << endl;
         return rec.mat->albedo; //ez. just return the color of the emissive material. 
     }
 
-    if(recursion_depth >= 3 && RandomGenerator::randomFloat() > continueProb)
+    if(recursion_depth >= 5 && RandomGenerator::randomFloat() > continueProb)
     {
-        return result; // terminate the path with some probability.
+        return result; // terminate the path with some probability which returns black..
     }
     // vec3 l = sampleHemisphereUniform(rec.n); //this is the direction we want to sample in this instance.
     vec3 l;
     color weight;
-    if (rec.mat->sampleDirection(rec, ogRay.d, l, weight)) {
-        Ray ray(rec.p + bias * rec.n, l);
+    if (rec.mat->sampleDirection(rec, ogRay.d, l, weight)) 
+    {
+        Ray ray(rec.p, l);
         HitRecord newRec = getRayHit(ray, scene, Interval(bias, MAXFLOAT));
         if (newRec.hit) {
             // color incoming = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
@@ -442,8 +448,8 @@ color PathTracing(Ray &ogRay, HitRecord &rec, Scene &scene, int recursion_depth,
             color indirect = PathTracing(ray, newRec, scene, recursion_depth + 1, continueProb);
             result = direct + weight * indirect;
         }
-}
-    return result;
+        return result;
+    }
 
     // now we sample in this direction, simple as that.
 
@@ -503,8 +509,9 @@ void sendRays(Camera &camera, Scene &scene, HDRImage &image, int bounces)
 inline color trace_paths(Ray &ray, Scene &scene, int num_samples)
 {
     color acc = color(0.0);
-    int recursion_depth = 4;
+    int recursion_depth = 9;
     float continue_prob = 1 - (1.0f / (float)recursion_depth);
+    continue_prob = 0.9;
     for(int k = 0; k < num_samples; k++)
     {
         // color c = scene.sky; //= glm::normalize(ray.d) * 0.5f + 0.5f; //original color.
